@@ -1,5 +1,6 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
+#include <algorithm>
 #include <thread>
 #include <chrono>
 #include <ncurses.h>
@@ -28,21 +29,48 @@ std::vector<std::string> listSongs(const std::string& directory) {
     return songs;
 }
 
-void printControls(WINDOW* win) {
-    wattron(win, A_BOLD);
-    mvwprintw(win, 1, 2, "Controls:");
-    wattroff(win, A_BOLD);
-    mvwprintw(win, 3, 2, "p - Pause/Play");
-    mvwprintw(win, 4, 2, "f - Seek forward 5 seconds");
-    mvwprintw(win, 5, 2, "g - Seek backward 5 seconds");
-    mvwprintw(win, 6, 2, "r - Replay song");
-    mvwprintw(win, 7, 2, "j - Move up");
-    mvwprintw(win, 8, 2, "k - Move down");
-    mvwprintw(win, 9, 2, "9 - Volume up");
-    mvwprintw(win, 10, 2, "0 - Volume down");
-    mvwprintw(win, 11, 2, "n - Next song");
-    mvwprintw(win, 12, 2, "b - Previous song");
-    mvwprintw(win, 13, 2, "q - Quit");
+std::string captureSearchInput() {
+    char ch;
+    std::string searchString;
+    while ((ch = getch()) != ERR && ch != '\n') {
+        if (ch == 27) { // ESC key to cancel search
+            return "";
+        }
+        searchString += ch;
+    }
+    return searchString;
+}
+
+void highlightSearchResults(MENU* menu, const std::string& searchString) {
+    int numItems = item_count(menu);
+    ITEM** items = menu_items(menu);
+
+    for (int i = 0; i < numItems; ++i) {
+        std::string itemName = item_name(items[i]);
+        bool isMatch = itemName.find(searchString) != std::string::npos;
+        set_item_userptr(items[i], (void*)(isMatch ? 1 : 0)); // Set userptr to 1 if match, 0 otherwise
+    }
+    post_menu(menu);
+}
+
+void displayHelpWindow(WINDOW* menu_win) {
+    // Clear the menu window
+    werase(menu_win);
+    box(menu_win, 0, 0);
+    mvwprintw(menu_win, 1, 2, "Help Controls");
+    mvwprintw(menu_win, 3, 2, "p - Pause/Play");
+    mvwprintw(menu_win, 4, 2, "f - Seek forward 5 seconds");
+    mvwprintw(menu_win, 5, 2, "g - Seek backward 5 seconds");
+    mvwprintw(menu_win, 6, 2, "r - Replay song");
+    mvwprintw(menu_win, 7, 2, "j - Move up");
+    mvwprintw(menu_win, 8, 2, "k - Move down");
+    mvwprintw(menu_win, 9, 2, "q - Quit");
+    mvwprintw(menu_win, 10, 2, "n - Next Song");
+    mvwprintw(menu_win, 11, 2, "b - Previous Song");
+    mvwprintw(menu_win, 12, 2, "9 - Increase Volume");
+    mvwprintw(menu_win, 13, 2, "0 - Decrease Volume");
+    mvwprintw(menu_win, 15, 2, "Press '1' to go back to the menu");
+    wrefresh(menu_win);
 }
 
 void playMusic(sf::Music& music, const std::string& songPath) {
@@ -63,7 +91,7 @@ void printTitle(WINDOW* win, const char* title) {
 }
 
 void updateStatusBar(WINDOW* status_win, const std::string& songName, const sf::Music& music) {
-    const int maxSongNameLength = 40;  // Maximum characters to show
+    const int maxSongNameLength = 45;  // Maximum characters to show
     std::string displayName = songName.length() > maxSongNameLength ? songName.substr(0, maxSongNameLength) + "..." : songName;
 
     wmove(status_win, 1, 1);
@@ -74,7 +102,8 @@ void updateStatusBar(WINDOW* status_win, const std::string& songName, const sf::
 
     // Set text color to black
     wattron(status_win, COLOR_PAIR(6));  // Assuming COLOR_PAIR(6) is set to black text
-    mvwprintw(status_win, 1, 1, " Now Playing: %s", displayName.c_str());
+    // Add play/pause symbol
+    const char* playPauseSymbol = (music.getStatus() == sf::Music::Playing) ? "<>" : "!!";
 
     // Get current position and duration
     sf::Time currentTime = music.getPlayingOffset();
@@ -84,9 +113,10 @@ void updateStatusBar(WINDOW* status_win, const std::string& songName, const sf::
     int durMinutes = static_cast<int>(duration.asSeconds()) / 60;
     int durSeconds = static_cast<int>(duration.asSeconds()) % 60;
 
-    char timeStr[50];
-    snprintf(timeStr, sizeof(timeStr), " | (%02d:%02d / %02d:%02d) ", posMinutes, posSeconds, durMinutes, durSeconds);
-    mvwprintw(status_win, 1, strlen(displayName.c_str()) + 14, "%s", timeStr);
+    float volume = music.getVolume();
+
+    mvwprintw(status_win, 1, 1, " Status:  %s   |   %s   |   %02d:%02d / %02d:%02d   |  Vol. %.0f%%                                                                                        Litemus ", playPauseSymbol, displayName.c_str(), posMinutes, posSeconds, durMinutes, durSeconds, volume);
+
     wattroff(status_win, COLOR_PAIR(5));  // Reset background color
     wattroff(status_win, COLOR_PAIR(6));  // Reset text color
     wrefresh(status_win);
@@ -115,6 +145,7 @@ void adjustVolume(sf::Music& music, float volumeChange) {
 
 int main() {
     // Initialize ncurses
+    setlocale(LC_ALL, "");
     initscr();
     start_color();
     cbreak();
@@ -146,21 +177,12 @@ int main() {
     }
     items[songs.size()] = nullptr;
 
-    // Create the menu 
-
-    WINDOW* title_win = newwin(3, 100, 0, 0);  // Title bar at the top 
-                                                  
-    wbkgd(title_win, COLOR_PAIR(1));
-    wattron(title_win, A_BOLD | COLOR_PAIR(1));
-    mvwprintw(title_win, 1, (getmaxx(title_win) - strlen("litemus")) / 2, "litemus");
-    wattroff(title_win, A_BOLD | COLOR_PAIR(1));
-    wrefresh(title_win);
-
+    // Create the menu  
     MENU* menu = new_menu(items);
 
     // Calculate the dimensions of the windows
-    int menu_height = songs.size() + 4 > 25 ? 25 : songs.size() + 4;
-    int menu_width = 100;
+    int menu_height = songs.size() + 4 > 40 ? 40 : songs.size() + 4;
+    int menu_width = 90;
     int controls_height = 15;
     int controls_width = 50; 
 
@@ -177,13 +199,9 @@ int main() {
     box(menu_win, 0, 0);
     box(controls_win, 0, 0);
     box(status_win, 0, 0);
-    box(title_win, 0, 0);
 
     // Print title and controls
     printTitle(menu_win, "Select a song to play");
-    printControls(controls_win);
-    mvwprintw(status_win, 1, 1, "Now Playing: ");
-    wrefresh(title_win); // Refresh the title window
     wrefresh(menu_win);
     wrefresh(controls_win);
     wrefresh(status_win);
@@ -191,8 +209,7 @@ int main() {
     sf::Music music;
     int currentSongIndex = 0;
     std::string currentSong = songs.empty() ? "" : songs[0];
-    // playMusic(music, songsDirectory + currentSong);
-
+  
     // Set ncurses timeout
     timeout(100); // Set timeout to 100ms
 
@@ -200,14 +217,38 @@ int main() {
         int ch = getch();
         if (ch != ERR) {  // Handle user input
             switch (ch) {
+                case '1':
+                  werase(menu_win);
+                  menu_driver(menu, REQ_UP_ITEM);
+                  menu_driver(menu, REQ_DOWN_ITEM);
+                  break;
                 case KEY_DOWN:
                 case 'k':
+                    werase(menu_win);
                     menu_driver(menu, REQ_DOWN_ITEM);
                     break;
                 case KEY_UP:
                 case 'j':
+                    werase(menu_win);
                     menu_driver(menu, REQ_UP_ITEM);
                     break;
+                case KEY_RIGHT: // Page down
+                    werase(menu_win);
+                    menu_driver(menu, REQ_SCR_DPAGE);
+                    break;
+                case KEY_LEFT: // Page up
+                    werase(menu_win);
+                    menu_driver(menu, REQ_SCR_UPAGE);
+                    break;
+                // case '/': {
+                //     mvwprintw(controls_win, 12, 2, "Search: ");
+                //     wrefresh(controls_win);
+                //     std::string searchString = captureSearchInput();
+                //     if (!searchString.empty()) {
+                //         highlightSearchResults(menu, searchString);
+                //     }
+                //     break;
+                // }
                 case 10: // Enter key
                     {
                         ITEM* curItem = current_item(menu);
@@ -223,49 +264,42 @@ int main() {
                 case 'p': // Pause/Resume
                     if (music.getStatus() == sf::Music::Paused) {
                         music.play();
-                        mvwprintw(controls_win, 12, 2, "Music resumed.  ");
                     } else {
                         music.pause();
-                        mvwprintw(controls_win, 12, 2, "Music paused.   ");
                     }
                     break;
                 case 'f': // Seek 5 seconds forward
                     music.setPlayingOffset(music.getPlayingOffset() + sf::seconds(5));
-                    mvwprintw(controls_win, 12, 2, "Seeking 5 seconds forward.   ");
                     break;
                 case 'g': // Seek 5 seconds backward
                     if (music.getPlayingOffset() > sf::seconds(5)) {
                         music.setPlayingOffset(music.getPlayingOffset() - sf::seconds(5));
-                        mvwprintw(controls_win, 12, 2, "Seeking 5 seconds backward.   ");
                     } else {
                         music.setPlayingOffset(sf::seconds(0));
-                        mvwprintw(controls_win, 12, 2, "Seeking to the start of the song.   ");
                     }
                     break;
                 case 'r': // Replay the song
                     music.stop();
                     music.play();
-                    mvwprintw(controls_win, 12, 2, "Replaying the song.   ");
                     break;
                 case '9': // Volume Up
                     adjustVolume(music, 10.f);
-                    mvwprintw(controls_win, 12, 2, "Volume increased.   ");
                     break;
                 case '0': // Volume Down
                     adjustVolume(music, -10.f);
-                    mvwprintw(controls_win, 12, 2, "Volume decreased.   ");
                     break;
                 case 'n': // Next song
                     nextSong(music, songs, currentSongIndex, songsDirectory);
                     currentSong = songs[currentSongIndex];
                     updateStatusBar(status_win, currentSong, music);
-                    mvwprintw(controls_win, 12, 2, "Next song selected.   ");
                     break;
                 case 'b': // Previous song
                     previousSong(music, songs, currentSongIndex, songsDirectory);
                     currentSong = songs[currentSongIndex];
                     updateStatusBar(status_win, currentSong, music);
-                    mvwprintw(controls_win, 12, 2, "Previous song selected.   ");
+                    break;
+                case '2':
+                    displayHelpWindow(menu_win);
                     break;
                 case 'q': // Quit
                     music.stop();
@@ -284,13 +318,13 @@ int main() {
         box(menu_win, 0, 0);
         printTitle(menu_win, "Select a song to play");
         mvwprintw(controls_win, 12, 2, "                                  "); // Clear message line
-        printControls(controls_win);
+        // printControls(controls_win);
         post_menu(menu);
 
         wrefresh(menu_win);
         wrefresh(controls_win);
         wrefresh(status_win);
-        wrefresh(title_win); // Refresh the title window
+        // wrefresh(title_win); // Refresh the title window
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Periodic update
     }
@@ -304,7 +338,7 @@ int main() {
     delwin(menu_win);
     delwin(controls_win);
     delwin(status_win);
-    delwin(title_win); // Delete the title window
+    // delwin(title_win); // Delete the title window
     endwin();
 
     return 0;
