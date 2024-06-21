@@ -12,9 +12,9 @@
 ### BUILD:
 Currently, `main.cpp` and `ncurses_lmus.cpp` are NOT connected, this is still a massive work in progress.
 
-->Firstly, clone this repository
+-> Firstly, clone this repository
 
-->To test `main.cpp`, just run
+-> To test `main.cpp`, just run
 
 `mkdir build && cd build && cmake ..`
 
@@ -22,7 +22,7 @@ Currently, `main.cpp` and `ncurses_lmus.cpp` are NOT connected, this is still a 
 
 Then run the executable `./build/LiteMusCache`
 
-->To test `ncurses_lmus.cpp`,
+-> To test `ncurses_lmus.cpp`,
 
 `g++ -o ncurses_lmus ncurses_lmus.cpp -lsfml-system -lsfml-audio -lsfml-network -lsfml-graphics -lncurses -lmenu`
 

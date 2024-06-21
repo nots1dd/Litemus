@@ -192,7 +192,7 @@ int main() {
 
     // Set the menu window and sub-window
     set_menu_win(menu, menu_win);
-    set_menu_sub(menu, derwin(menu_win, menu_height - 4, menu_width - 2, 3, 1));
+    set_menu_sub(menu, derwin(menu_win, menu_height - 3, menu_width - 2, 3, 1));
     set_menu_mark(menu, " > ");
 
     // Box the windows
