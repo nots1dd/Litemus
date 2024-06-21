@@ -1,5 +1,6 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <thread>
 #include <chrono>
@@ -9,49 +10,76 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <unistd.h>
+#include <nlohmann/json.hpp>
 
-// Function to list MP3 files in the directory
-std::vector<std::string> listSongs(const std::string& directory) {
-    std::vector<std::string> songs;
-    DIR* dir = opendir(directory.c_str());
-    if (dir) {
-        struct dirent* ent;
-        while ((ent = readdir(dir)) != nullptr) {
-            std::string file = ent->d_name;
-            if (file.size() > 4 && file.substr(file.size() - 4) == ".mp3") {
-                songs.push_back(file);
-            }
-        }
-        closedir(dir);
-    } else {
-        std::cerr << "Could not open directory: " << directory << std::endl;
+
+using json = nlohmann::json;
+
+void changeDirectory(const std::string& path) {
+    if (chdir(path.c_str()) != 0) {
+      std::cerr << "Directory not found" << std::endl;
+      exit(EXIT_FAILURE);
     }
+}
+
+// Function to list MP3 songs from the directory and cache file
+std::vector<std::string> listSongs(const std::string& directory, const std::string& cacheFile) {
+    std::ifstream file(cacheFile);
+    if (!file.is_open()) {
+        std::cerr << "Could not open cache file: " << cacheFile << std::endl;
+        return {};
+    }
+
+    json j;
+    try {
+        file >> j;
+    } catch (const std::exception& e) {
+        std::cerr << "Error parsing JSON: " << e.what() << std::endl;
+        return {};
+    }
+
+    if (!j.is_array()) {
+        std::cerr << "Invalid JSON format: Expected an array" << std::endl;
+        return {};
+    }
+
+    std::vector<std::string> songs;
+    for (const auto& songName : j) {
+        if (songName.is_string()) {
+            songs.push_back(songName.get<std::string>());
+        } else {
+            std::cerr << "Invalid JSON format: Array element is not a string" << std::endl;
+            return {};
+        }
+    }
+
     return songs;
 }
 
-std::string captureSearchInput() {
-    char ch;
-    std::string searchString;
-    while ((ch = getch()) != ERR && ch != '\n') {
-        if (ch == 27) { // ESC key to cancel search
-            return "";
-        }
-        searchString += ch;
-    }
-    return searchString;
-}
-
-void highlightSearchResults(MENU* menu, const std::string& searchString) {
-    int numItems = item_count(menu);
-    ITEM** items = menu_items(menu);
-
-    for (int i = 0; i < numItems; ++i) {
-        std::string itemName = item_name(items[i]);
-        bool isMatch = itemName.find(searchString) != std::string::npos;
-        set_item_userptr(items[i], (void*)(isMatch ? 1 : 0)); // Set userptr to 1 if match, 0 otherwise
-    }
-    post_menu(menu);
-}
+// std::string captureSearchInput() {
+//     char ch;
+//     std::string searchString;
+//     while ((ch = getch()) != ERR && ch != '\n') {
+//         if (ch == 27) { // ESC key to cancel search
+//             return "";
+//         }
+//         searchString += ch;
+//     }
+//     return searchString;
+// }
+//
+// void highlightSearchResults(MENU* menu, const std::string& searchString) {
+//     int numItems = item_count(menu);
+//     ITEM** items = menu_items(menu);
+//
+//     for (int i = 0; i < numItems; ++i) {
+//         std::string itemName = item_name(items[i]);
+//         bool isMatch = itemName.find(searchString) != std::string::npos;
+//         set_item_userptr(items[i], (void*)(isMatch ? 1 : 0)); // Set userptr to 1 if match, 0 otherwise
+//     }
+//     post_menu(menu);
+// }
 
 void displayHelpWindow(WINDOW* menu_win) {
     // Clear the menu window
@@ -88,6 +116,7 @@ void printTitle(WINDOW* win, const char* title) {
     wattron(win, A_BOLD | COLOR_PAIR(1));
     mvwprintw(win, 1, (getmaxx(win) - strlen(title)) / 2, "%s", title);
     wattroff(win, A_BOLD | COLOR_PAIR(1));
+    wrefresh(win);
 }
 
 void updateStatusBar(WINDOW* status_win, const std::string& songName, const sf::Music& music) {
@@ -144,6 +173,8 @@ void adjustVolume(sf::Music& music, float volumeChange) {
 }
 
 int main() {
+    const std::string songsDirectory = "/home/s1dd/Downloads/Songs/";
+    changeDirectory(songsDirectory);
     // Initialize ncurses
     setlocale(LC_ALL, "");
     initscr();
@@ -159,9 +190,9 @@ int main() {
     init_pair(4, COLOR_BLUE, COLOR_BLACK);   // For the status bar
     init_pair(5, COLOR_BLACK, COLOR_BLACK);  // For the greyish status bar background
     init_pair(6, COLOR_BLACK, COLOR_WHITE);  // For text color in the status bar
-
-    const std::string songsDirectory = "/home/s1dd/Downloads/Songs/";
-    std::vector<std::string> songs = listSongs(songsDirectory);
+    
+    const std::string cacheDirectory = "/home/s1dd/Downloads/Songs/.cache/litemus/info/song_names.json";
+    std::vector<std::string> songs = listSongs(songsDirectory, cacheDirectory);
 
     if (songs.empty()) {
         printw("No songs found in directory.\n");
@@ -181,13 +212,21 @@ int main() {
     MENU* menu = new_menu(items);
 
     // Calculate the dimensions of the windows
+    int title_height = 3; 
     int menu_height = songs.size() + 4 > 40 ? 40 : songs.size() + 4;
     int menu_width = 90;
+    int title_width = 206;
     int controls_height = 15;
     int controls_width = 50; 
 
-    WINDOW* menu_win = newwin(menu_height, menu_width, 2, 2);
-    WINDOW* controls_win = newwin(controls_height, controls_width, menu_height + 3, 2);
+    // Create title window
+    WINDOW* title_win = newwin(title_height, title_width, 0, 2);
+    box(title_win, 0, 0);
+    // printTitle(title_win, "    LITEMUS    ");
+    wrefresh(title_win);
+
+    WINDOW* menu_win = newwin(menu_height, menu_width, title_height, 2);
+    WINDOW* controls_win = newwin(controls_height, controls_width, title_height + menu_height + 1, 2);
     WINDOW* status_win = newwin(10, 200, LINES - 3, 0); // Status bar at the bottom
 
     // Set the menu window and sub-window
@@ -199,6 +238,7 @@ int main() {
     box(menu_win, 0, 0);
     box(controls_win, 0, 0);
     box(status_win, 0, 0);
+    box(title_win, 0, 0);
 
     // Print title and controls
     printTitle(menu_win, "Select a song to play");
@@ -316,6 +356,7 @@ int main() {
         // Redraw windows and refresh
         wrefresh(menu_win);
         box(menu_win, 0, 0);
+        printTitle(title_win, "    LITEMUS    ");
         printTitle(menu_win, "Select a song to play");
         mvwprintw(controls_win, 12, 2, "                                  "); // Clear message line
         // printControls(controls_win);
@@ -324,7 +365,7 @@ int main() {
         wrefresh(menu_win);
         wrefresh(controls_win);
         wrefresh(status_win);
-        // wrefresh(title_win); // Refresh the title window
+        wrefresh(title_win); // Refresh the title window
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Periodic update
     }
@@ -338,7 +379,7 @@ int main() {
     delwin(menu_win);
     delwin(controls_win);
     delwin(status_win);
-    // delwin(title_win); // Delete the title window
+    delwin(title_win); // Delete the title window
     endwin();
 
     return 0;
