@@ -1,15 +1,4 @@
-#include <iostream>
-#include <unistd.h>
-#include <vector>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <sys/stat.h>
-#include "nlohmann/json.hpp"
-#include "headers/exitError.h"
-#include "headers/executeCmd.h"
-#include "headers/sanitize.h"
-#include "headers/directoryUtils.hpp"
+#include "../lmus_cache.hpp"
 
 using json = nlohmann::json;
 using namespace std;
@@ -176,7 +165,7 @@ bool compareInodeVectors(const vector<string>& vec1, const vector<string>& vec2)
     return true;
 }
 
-int main() { 
+int lmus_cache_main() { 
     changeDirectory(songDirectory);
     createDirectory(cacheDirectory);
     createDirectory(cacheLitemusDirectory);
@@ -222,15 +211,16 @@ int main() {
         }
 
         storeSongCountAndInodes(cacheInfoDirectory, cachedSongCount, inodes, songNames, songsInfoArray);
+        saveArtistsToFile(artistsArray, artistsFilePath);
+        storeSongsJSON(cacheInfoDirectory + "/song_names.json", songNames);
 
         cout << endl << GREEN << BOLD << "[SUCCESS] Total of " << cachedSongCount << " songs have been cached in " << cacheSortDirectory << RESET << endl;
         cout << PINK << BOLD << "[CACHE] Songs' cache has been stored in " << cacheInfoDirectory << RESET << endl;
     }
 
-    saveArtistsToFile(artistsArray, artistsFilePath);
-    storeSongsJSON(cacheInfoDirectory + "/song_names.json", songNames); // Store song names in JSON file
-    printArtists(artistsArray);
-    cout << PINK << BOLD << "[SONG] Play functions go here" << endl;
+     // Store song names in JSON file
+    // printArtists(artistsArray);
+    // cout << PINK << BOLD << "[SONG] Play functions go here" << endl;
 
     return 0;
 }

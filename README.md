@@ -1,34 +1,35 @@
-# LiteMus in C++
+# LiteMus - Light Music Player written in C++
 
-## C++ version of LiteMus, written with ncurses, SFLW
+## Fast and Interactive music player that uses SLFW, ncurses, nlohmann json libraries
 
 ### FEATURES:
 
-1. Insanely fast sorting and caching system thanks to Inode data structure of filesystem and C++ libraries
+1. Insanely fast sorting and caching system thanks to Inode data structure of filesystem and C++ libraries (lmus_cache.h)
 2. Ncurses library for making the beautiful TUI
 3. SFLW for the audio API for smooth audio quality and FEATURES
-4. Basic song controls are implemented
+4. Basic song controls are implemented (play, pause, seek forward/backward, next song , prev song)
 
 ### BUILD:
-Currently, `main.cpp` and `ncurses_lmus.cpp` are NOT connected, this is still a massive work in progress.
 
--> Firstly, clone this repository
+#### NOTE: This has only been tried and tested on Arch Linux 6.9 kernel (x86-64)
 
--> To test `main.cpp`, just run
+->  Clone this repository `https://github.com/nots1dd/Litemus.git`
 
-`mkdir build && cd build && cmake ..`
+->  Then run `cmake -S .-B build/`
 
-`cmake --build build/`
+-> Finally run `cmake --build build/`
 
-Then run the executable `./build/LiteMusCache`
+This will generate a `./build/Litemus` executable. Run it to get the Litemus experience!
 
--> To test `ncurses_lmus.cpp`,
+#### CAUTION: Running the executable might not work as there are some directories that are HARDCODED in this project. Change them to as you see fit in order for it to work. Will come up with a clean way of handling this issue in the near future.
 
-`g++ -o ncurses_lmus ncurses_lmus.cpp -lsfml-system -lsfml-audio -lsfml-network -lsfml-graphics -lncurses -lmenu`
+### INSTALLATION:
 
-Then run the executable, `./ncurses_lmus`
+There is currently no means of installing this on any Linux distro other than building it from source.
 
+-> As such, if there are any issues with building Litemus from this repository in any distro, feel free to care an issue.
 
 ### FUTURE:
-1. Actual Integration of the cache system and `ncurses_lmus.cpp`
-2. Parsing of the cached information for song display and lyrics
+1. Parsing of the cached information for song display and lyrics
+2. CMUS like two window system (left for artists, right for their songs sorted by album)
+3. Multiple windows like song display, lyrics display and litemus session details (maybe even an audio visualizer)

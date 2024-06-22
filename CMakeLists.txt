@@ -1,42 +1,44 @@
 cmake_minimum_required(VERSION 3.10)
 
-# Set the project name and version
-project(LiteMusCache VERSION 1.0)
+# Project name and version
+project(Litemus VERSION 1.0)
 
-# Specify the C++ standard
+# Set C++ standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Add include directories
-include_directories(headers)
+# Add the executable
+add_executable(Litemus ncurses_lmus.cpp headers/src/executeCmd.cpp headers/src/lmus_cache.cpp headers/src/sanitize.cpp)
 
-# Add source files
-file(GLOB SOURCES "src/*.cpp" "main.cpp")
+# Find and include SFML
+find_package(SFML 2.5 COMPONENTS audio REQUIRED)
+if (SFML_FOUND)
+    include_directories(${SFML_INCLUDE_DIR})
+    target_link_libraries(Litemus sfml-audio sfml-system)
+else()
+    message(FATAL_ERROR "SFML library not found")
+endif()
 
-# Add executable
-add_executable(LiteMusCache ${SOURCES})
-
-# Find and link the nlohmann_json library
+# Include nlohmann JSON library
+# Assumes nlohmann_json is installed and findable by CMake
 find_package(nlohmann_json 3.2.0 REQUIRED)
-target_link_libraries(LiteMusCache PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(Litemus nlohmann_json::nlohmann_json)
 
-# Link necessary libraries
-find_package(Threads REQUIRED)
-target_link_libraries(LiteMusCache PRIVATE Threads::Threads)
+# Include ncurses and menu libraries
+find_package(Curses REQUIRED)
+include_directories(${CURSES_INCLUDE_DIR})
+target_link_libraries(Litemus ${CURSES_LIBRARIES})
+target_link_libraries(Litemus menu)
 
-# Optionally link with rt, pthread, and dl if available
-find_library(LIB_RT rt)
-if(LIB_RT)
-    target_link_libraries(LiteMusCache PRIVATE ${LIB_RT})
-endif()
+# Include custom headers
+include_directories(${CMAKE_SOURCE_DIR}/headers)
 
-find_library(LIB_DL dl)
-if(LIB_DL)
-    target_link_libraries(LiteMusCache PRIVATE ${LIB_DL})
-endif()
+# Add additional source files if needed
+# For example:
+# target_sources(Litemus PRIVATE src/exitError.cpp src/executeCmd.cpp src/sanitize.cpp src/directoryUtils.cpp)
 
-# Add the source files for executeCmd and sanitize
-target_sources(LiteMusCache PRIVATE
-    headers/src/executeCmd.cpp
-    headers/src/sanitize.cpp
-)
+# For custom headers (e.g., lmus_cache.hpp), ensure they're in the correct directory
+target_include_directories(Litemus PRIVATE headers)
+
+# Set compile options
+target_compile_options(Litemus PRIVATE -Wall -Wextra -pedantic)

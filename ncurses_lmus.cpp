@@ -1,3 +1,4 @@
+// #include "headers/song_cache.h"
 #include <SFML/Audio.hpp>
 #include <iostream>
 #include <fstream>
@@ -12,6 +13,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <nlohmann/json.hpp>
+#include "headers/lmus_cache.hpp"
 
 #define GREY_BACKGROUND_COLOR 7
 
@@ -19,7 +21,7 @@ const char* title_content = "  LITEMUS - Light Music player                     
 
 using json = nlohmann::json;
 
-void changeDirectory(const std::string& path) {
+void changeDirectoryLmus(const std::string& path) {
     if (chdir(path.c_str()) != 0) {
         std::cerr << "Directory not found" << std::endl;
         exit(EXIT_FAILURE);
@@ -149,7 +151,9 @@ void adjustVolume(sf::Music& music, float volumeChange) {
 
 int main() {
     const std::string songsDirectory = "/home/s1dd/Downloads/Songs/";
-    changeDirectory(songsDirectory);
+    /* changeDirectoryLmus(songsDirectory); */
+    lmus_cache_main();
+    
 
     setlocale(LC_ALL, "");
     initscr();
@@ -202,15 +206,17 @@ int main() {
     WINDOW* status_win = newwin(10, 200, LINES - 3, 0);
 
     set_menu_win(menu, menu_win);
-    set_menu_sub(menu, derwin(menu_win, menu_height - 3, menu_width - 2, 3, 1));
+    set_menu_sub(menu, derwin(menu_win, menu_height - 3, menu_width - 2, 2, 1));
     set_menu_mark(menu, " > ");
+
+    set_menu_format(menu, menu_height, 0);
 
     box(menu_win, 0, 0);
     box(controls_win, 0, 0);
     box(status_win, 0, 0);
     box(title_win, 0, 0);
 
-    printTitle(menu_win, "Select a song to play: ");
+    // printTitle(menu_win, "Select a song to play: ");
     wrefresh(menu_win);
     wrefresh(controls_win);
     wrefresh(status_win);
@@ -232,21 +238,29 @@ int main() {
                     break;
                 case KEY_DOWN:
                 case 'k':
-                    werase(menu_win);
-                    menu_driver(menu, REQ_DOWN_ITEM);
+                   if (item_index(current_item(menu)) < songs.size() - 1) {
+                        werase(menu_win);
+                        menu_driver(menu, REQ_DOWN_ITEM);
+                    }
                     break;
                 case KEY_UP:
                 case 'j':
-                    werase(menu_win);
-                    menu_driver(menu, REQ_UP_ITEM);
+                    if (item_index(current_item(menu)) > 0) {
+                        werase(menu_win);
+                        menu_driver(menu, REQ_UP_ITEM);
+                    }
                     break;
                 case KEY_RIGHT:
-                    werase(menu_win);
-                    menu_driver(menu, REQ_SCR_DPAGE);
+                    if (item_index(current_item(menu)) < songs.size() - 1) {
+                        werase(menu_win);
+                        menu_driver(menu, REQ_SCR_DPAGE);
+                    }
                     break;
                 case KEY_LEFT:
-                    werase(menu_win);
-                    menu_driver(menu, REQ_SCR_UPAGE);
+                    if (item_index(current_item(menu)) > 0) {
+                        werase(menu_win);
+                        menu_driver(menu, REQ_SCR_UPAGE);
+                    }
                     break;
                 case 10:
                 {
@@ -322,7 +336,7 @@ int main() {
         wattroff(title_win, COLOR_PAIR(5));
         wattroff(title_win, COLOR_PAIR(6));
         wrefresh(title_win);
-        printTitle(menu_win, "Select a song to play: ");
+        // printTitle(menu_win, "Select a song to play: ");
         mvwprintw(controls_win, 12, 2, "                                  ");
         post_menu(menu);
 
