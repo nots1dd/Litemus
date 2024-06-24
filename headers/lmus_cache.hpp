@@ -26,6 +26,6 @@ void printArtists(const json& artistsArray);
 void storeSongCountAndInodes(const string& infoDirectory, int songCount, const vector<string>& inodes, const vector<string>& songNames, const json& songsInfoArray);
 void storeSongsJSON(const string& filePath, const vector<string>& songNames);
 bool compareInodeVectors(const vector<string>& vec1, const vector<string>& vec2);
-int lmus_cache_main();
+int lmus_cache_main(const std::string songDirectory);
 
 #endif // MAIN_HPP

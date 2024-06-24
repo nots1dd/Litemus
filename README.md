@@ -15,6 +15,8 @@
 
 ->  Clone this repository `https://github.com/nots1dd/Litemus.git`
 
+-> Install the required C++ libraries `ncurses`, `SFLW`, `nlohmann-json`
+
 ->  Then run `cmake -S .-B build/`
 
 -> Finally run `cmake --build build/`

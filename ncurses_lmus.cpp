@@ -1,4 +1,3 @@
-// #include "headers/song_cache.h"
 #include <SFML/Audio.hpp>
 #include <iostream>
 #include <fstream>
@@ -20,13 +19,6 @@
 const char* title_content = "  LITEMUS - Light Music player                                                                                                                                                                       ";
 
 using json = nlohmann::json;
-
-void changeDirectoryLmus(const std::string& path) {
-    if (chdir(path.c_str()) != 0) {
-        std::cerr << "Directory not found" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-}
 
 std::vector<std::string> listSongs(const std::string& directory, const std::string& cacheFile) {
     std::ifstream file(cacheFile);
@@ -100,7 +92,7 @@ void printTitle(WINDOW* win, const char* title) {
     wrefresh(win);
 }
 
-void updateStatusBar(WINDOW* status_win, const std::string& songName, const sf::Music& music) {
+void updateStatusBar(WINDOW* status_win, const std::string& songName, const sf::Music& music, bool firstEnterPressed) {
     const int maxSongNameLength = 45;
     std::string displayName = songName.length() > maxSongNameLength ? songName.substr(0, maxSongNameLength) + "..." : songName;
 
@@ -112,6 +104,7 @@ void updateStatusBar(WINDOW* status_win, const std::string& songName, const sf::
     wattron(status_win, COLOR_PAIR(6));
 
     const char* playPauseSymbol = (music.getStatus() == sf::Music::Playing) ? "<>" : "!!";
+    const char* launchSymbol = "--";
     sf::Time currentTime = music.getPlayingOffset();
     sf::Time duration = music.getDuration();
     int posMinutes = static_cast<int>(currentTime.asSeconds()) / 60;
@@ -121,8 +114,7 @@ void updateStatusBar(WINDOW* status_win, const std::string& songName, const sf::
 
     float volume = music.getVolume();
 
-    mvwprintw(status_win, 1, 1, " Status:  %s   |   %s   |   %02d:%02d / %02d:%02d   |  Vol. %.0f%%                                                                                        Litemus ", playPauseSymbol, displayName.c_str(), posMinutes, posSeconds, durMinutes, durSeconds, volume);
-
+    firstEnterPressed ? mvwprintw(status_win, 1, 1, " Status:  %s   |   %s   |   %02d:%02d / %02d:%02d   |  Vol. %.0f%%                                                                                        Litemus ", playPauseSymbol, displayName.c_str(), posMinutes, posSeconds, durMinutes, durSeconds, volume) : mvwprintw(status_win, 1, 1, " Status:  %s   |   Unknown Song   |   00:00 / 00:00   |  Vol. %.0f%%                                                                                        Litemus ", launchSymbol, volume);
     wattroff(status_win, COLOR_PAIR(5));
     wattroff(status_win, COLOR_PAIR(6));
     wrefresh(status_win);
@@ -151,8 +143,7 @@ void adjustVolume(sf::Music& music, float volumeChange) {
 
 int main() {
     const std::string songsDirectory = "/home/s1dd/Downloads/Songs/";
-    /* changeDirectoryLmus(songsDirectory); */
-    lmus_cache_main();
+    lmus_cache_main(songsDirectory);
     
 
     setlocale(LC_ALL, "");
@@ -171,7 +162,7 @@ int main() {
     init_pair(6, COLOR_BLACK, COLOR_WHITE);
     init_pair(GREY_BACKGROUND_COLOR, COLOR_WHITE, GREY_BACKGROUND_COLOR);
 
-    const std::string cacheDirectory = "/home/s1dd/Downloads/Songs/.cache/litemus/info/song_names.json";
+    const std::string cacheDirectory = songsDirectory + ".cache/litemus/info/song_names.json";
     std::vector<std::string> songs = listSongs(songsDirectory, cacheDirectory);
 
     if (songs.empty()) {
@@ -222,10 +213,12 @@ int main() {
     wrefresh(status_win);
 
     sf::Music music;
-    int currentSongIndex = 0;
+    int currentSongIndex = -1;
     std::string currentSong = songs.empty() ? "" : songs[0];
   
     timeout(100);
+
+    bool firstEnterPressed = false;
 
     while (true) {
         int ch = getch();
@@ -270,8 +263,9 @@ int main() {
                         currentSong = selectedSong;
                         currentSongIndex = std::distance(songs.begin(), std::find(songs.begin(), songs.end(), selectedSong));
                         playMusic(music, songsDirectory + currentSong);
-                        updateStatusBar(status_win, currentSong, music);
+                        updateStatusBar(status_win, currentSong, music, firstEnterPressed);
                     }
+                    firstEnterPressed = true;
                 }
                 break;
                 case 'p':
@@ -304,26 +298,41 @@ int main() {
                 case 'n':
                     nextSong(music, songs, currentSongIndex, songsDirectory);
                     currentSong = songs[currentSongIndex];
-                    updateStatusBar(status_win, currentSong, music);
+                    updateStatusBar(status_win, currentSong, music, firstEnterPressed);
                     break;
                 case 'b':
                     previousSong(music, songs, currentSongIndex, songsDirectory);
                     currentSong = songs[currentSongIndex];
-                    updateStatusBar(status_win, currentSong, music);
+                    updateStatusBar(status_win, currentSong, music, firstEnterPressed);
                     break;
                 case '2':
                     displayHelpWindow(menu_win);
                     break;
                 case 'q':
                     music.stop();
+                    unpost_menu(menu);
+                    // Free resources and clean up
+                    for (size_t i = 0; i < songs.size(); ++i) {
+                        free_item(items[i]);
+                    }
+                    free_menu(menu);
+                    delwin(menu_win);
+                    delwin(controls_win);
+                    delwin(status_win);
+                    delwin(title_win);
                     endwin();
                     return 0;
                 default:
                     mvwprintw(controls_win, 12, 2, "Invalid input.");
             }
         }
+        if (music.getStatus() == sf::Music::Stopped && firstEnterPressed) {
+            nextSong(music, songs, currentSongIndex, songsDirectory);
+            currentSong = songs[currentSongIndex];
+            updateStatusBar(status_win, currentSong, music, firstEnterPressed);
+        }
 
-        updateStatusBar(status_win, currentSong, music);
+        updateStatusBar(status_win, currentSong, music, firstEnterPressed);
 
         wrefresh(menu_win);
         box(menu_win, 0, 0);
