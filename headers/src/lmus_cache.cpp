@@ -17,11 +17,14 @@ const string extension = ".mp3";
 
 struct SongMetadata {
     string fileName;
+    string inode;
     string artist;
     string album;
     string title;
     int disc;
     int track;
+    string genre;
+    string lyrics;
 };
 
 // Function to get the list of inodes
@@ -55,10 +58,24 @@ string getFileNameFromInode(const string& inode) {
 
     return fileName;
 }
-
+// Function to escape special characters in filename
+string escapeSpecialCharacters(const string& fileName) {
+    string escapedFileName;
+    for (char c : fileName) {
+        if (c == '$' || c == '#') {
+            escapedFileName += '\\'; // Add a backslash before special characters
+        }
+        escapedFileName += c;
+    }
+    return escapedFileName;
+}
 // Function to store metadata in JSON format
-void storeMetadataJSON(const string& fileName, json& artistsArray, vector<SongMetadata>& songMetadata) {
-    string metadataCmd = "ffprobe -v quiet -print_format json -show_format \"" + fileName + "\"";
+void storeMetadataJSON(const string& inode, const string& fileName, json& artistsArray, vector<SongMetadata>& songMetadata) {
+    // Escape special characters in the filename
+    string escapedFileName = escapeSpecialCharacters(fileName);
+
+    // Construct the ffprobe command with the escaped filename
+    string metadataCmd = "ffprobe -v quiet -print_format json -show_format \"" + escapedFileName + "\"";
     string metadataInfo = executeCommand(metadataCmd);
 
     auto metadata = json::parse(metadataInfo);
@@ -68,10 +85,15 @@ void storeMetadataJSON(const string& fileName, json& artistsArray, vector<SongMe
     string title = metadata["format"]["tags"].contains("title") ? metadata["format"]["tags"]["title"].get<string>() : "Unknown_Title";
     int disc = metadata["format"]["tags"].contains("disc") ? stoi(metadata["format"]["tags"]["disc"].get<string>()) : 0;
     int track = metadata["format"]["tags"].contains("track") ? stoi(metadata["format"]["tags"]["track"].get<string>()) : 0;
+    string genre = metadata["format"]["tags"].contains("genre") ? metadata["format"]["tags"]["genre"].get<string>() : "";
+    string lyrics = metadata["format"]["tags"].contains("lyrics-XXX") ? metadata["format"]["tags"]["lyrics-XXX"].get<string>() : "";
 
+    // Use true values for original metadata
     string trueArtist = artist;
     string trueTitle = title;
+    string trueAlbum = album;
 
+    // Sanitize strings
     artist = sanitizeString(artist);
     album = sanitizeString(album);
     title = sanitizeString(title);
@@ -81,28 +103,9 @@ void storeMetadataJSON(const string& fileName, json& artistsArray, vector<SongMe
         artistsArray.push_back(trueArtist);
     }
 
-    string artistDir = ".cache/litemus/songs/" + artist;
-    createDirectory(artistDir);
-
-    string albumDir = artistDir + "/" + album;
-    createDirectory(albumDir);
-
-    string discDir = disc == 0 ? albumDir : albumDir + "/Disc" + to_string(disc);
-    createDirectory(discDir);
-
-    string trackPrefix = track == 0 ? "" : to_string(track) + " - ";
-    string songFileName = discDir + "/" + trackPrefix + title + ".cache";
-    ofstream outFile(songFileName, ios::trunc);
-    if (outFile.is_open()) {
-        outFile << metadataInfo;
-        outFile.close();
-    } else {
-        printErrorAndExit("[ERROR] Unable to open file for writing: " + songFileName);
-    }
-
-    songMetadata.push_back({fileName, trueArtist, album, trueTitle, disc, track});
+    // Store metadata
+    songMetadata.push_back({fileName, inode, trueArtist, trueAlbum, trueTitle, disc, track, genre, lyrics});
 }
-
 // Function to save artists to a file
 void saveArtistsToFile(const json& artistsArray, const string& filePath) {
     ofstream outFile(filePath, ios::trunc);
@@ -122,9 +125,54 @@ void printArtists(const json& artistsArray) {
     }
 }
 
-// Function to save song names to a JSON file
-void storeSongsJSON(const string& filePath, const vector<string>& songNames) {
-    json songsJson = songNames;
+
+
+void storeSongsJSON(const string& filePath, const vector<SongMetadata>& songMetadata) {
+    json songsJson;
+
+    for (const auto& song : songMetadata) {
+        // Check if the song has valid metadata to include
+        if (!song.artist.empty() && !song.album.empty() && song.disc > 0 && song.track > 0) {
+            json songInfo = {
+                {"title", song.title},
+                {"filename", song.fileName},
+                {"inode", song.inode},
+                {"disc", song.disc},
+                {"track", song.track},
+                {"genre", song.genre},
+                {"lyrics", song.lyrics}
+            };
+
+            // Ensure the artist exists in the JSON structure
+            if (!songsJson.contains(song.artist)) {
+                songsJson[song.artist] = json::object();
+            }
+
+            // Ensure the album exists under the artist
+            if (!songsJson[song.artist].contains(song.album)) {
+                songsJson[song.artist][song.album] = json::array();
+            }
+
+            // Ensure the disc exists under the album
+            while (songsJson[song.artist][song.album].size() < song.disc) {
+                songsJson[song.artist][song.album].push_back(json::array());
+            }
+
+            // Ensure the track exists under the disc
+            while (songsJson[song.artist][song.album][song.disc - 1].size() < song.track) {
+                songsJson[song.artist][song.album][song.disc - 1].push_back(json::object());
+            }
+
+            // Assign songInfo to the track index
+            songsJson[song.artist][song.album][song.disc - 1][song.track - 1] = songInfo;
+        } else {
+            cerr << "Skipping invalid song metadata: " << song.fileName << endl;
+            // Print out the metadata for debugging
+            cout << "Artist: " << song.artist << ", Album: " << song.album << ", Disc: " << song.disc << ", Track: " << song.track << endl;
+
+        }
+    }
+
     ofstream outFile(filePath, ios::trunc);
     if (outFile.is_open()) {
         outFile << songsJson.dump(4);
@@ -173,10 +221,9 @@ void saveCurrentInodes(const vector<string>& inodes, const string& filePath) {
 }
 
 int lmus_cache_main(const std::string songDirectory) {
-  // DIRECTORY VARIABLES
+    // DIRECTORY VARIABLES
     const string cacheDirectory = songDirectory + ".cache/";
     const string cacheLitemusDirectory = cacheDirectory + "litemus/";
-    const string cacheSortDirectory = cacheLitemusDirectory + "songs/";
     const string cacheInfoDirectory = cacheLitemusDirectory + "info/";
     const string artistsFilePath = cacheInfoDirectory + "artists.json";
     const string songCacheInfoFile = cacheInfoDirectory + "song_cache_info.json";
@@ -184,11 +231,9 @@ int lmus_cache_main(const std::string songDirectory) {
     changeDirectory(songDirectory);
     createDirectory(cacheDirectory);
     createDirectory(cacheLitemusDirectory);
-    createDirectory(cacheSortDirectory);
     createDirectory(cacheInfoDirectory);
 
     vector<string> inodes = getInodes();
-    vector<string> songNames;
     vector<SongMetadata> songMetadata;
 
     if (inodes.empty()) {
@@ -196,7 +241,7 @@ int lmus_cache_main(const std::string songDirectory) {
         return 1;
     }
 
-    // Load previous inodes from song_cache_info.json if it exists
+    // Load previous inodes from song_cache_info_file if it exists
     vector<string> previousInodes = loadPreviousInodes(songCacheInfoFile);
     json artistsArray;
     
@@ -209,7 +254,7 @@ int lmus_cache_main(const std::string songDirectory) {
         for (const string& inode : inodes) {
             string fileName = getFileNameFromInode(inode);
             cout << BLUE << "==> " << fileName << RESET << endl;
-            storeMetadataJSON(fileName, artistsArray, songMetadata);
+            storeMetadataJSON(inode, fileName, artistsArray, songMetadata);
             cachedSongCount++;
         }
 
@@ -223,21 +268,14 @@ int lmus_cache_main(const std::string songDirectory) {
             return a.track < b.track;
         });
 
-        // Extract sorted song names
-        songNames.clear();
-        for (const auto& song : songMetadata) {
-            songNames.push_back(song.fileName);
-        }
-
-        storeSongsJSON(cacheInfoDirectory + "/song_names.json", songNames);
+        storeSongsJSON(cacheInfoDirectory + "/song_names.json", songMetadata);
 
         // Save current inodes for future comparison
         saveCurrentInodes(inodes, songCacheInfoFile);
 
-        cout << endl << GREEN << BOLD << "[SUCCESS] Total of " << cachedSongCount << " songs have been cached in " << cacheSortDirectory << RESET << endl;
+        cout << endl << GREEN << BOLD << "[SUCCESS] Total of " << cachedSongCount << " songs have been cached!!" << endl;
         cout << PINK << BOLD << "[CACHE] Songs' cache has been stored in " << cacheInfoDirectory << RESET << endl;
     }
 
     return 0;
 }
-

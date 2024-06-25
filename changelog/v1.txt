@@ -1,0 +1,17 @@
+Change Type: MAJOR
+
+Summary
+
+-> Added a second window to proceed with the cmus like ncurses environement (artists - left win, songs of artist - right win)
+
+-> Massive change to lmus_cache method ::
+
+1. Instead of creating directories based on metadata, it is all compressed into one song_names.json that is easily parsable
+
+2. Bugfixes in the cache and song sort method (now the songs in each artist subcategory are sorted by album,disc and track)
+
+3. Refer to working.md to understand the new directory caching method
+
+->Cleanup of a lot of code (further cleanup needed though)
+
+->Easy access of both windows and all functionality is intact
