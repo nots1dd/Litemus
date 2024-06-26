@@ -9,6 +9,10 @@
 3. SFLW for the audio API for smooth audio quality and FEATURES
 4. Basic song controls are implemented (play, pause, seek forward/backward, next song , prev song)
 
+![litemusreadme1](https://github.com/nots1dd/Litemus/assets/140317709/c270df7d-af84-4cf9-a0b7-b475f27a2081)
+![litemusreadme2](https://github.com/nots1dd/Litemus/assets/140317709/56a5010b-d71e-4a4a-ac27-0ec880970052)
+
+
 ### BUILD:
 
 #### NOTE: This has only been tried and tested on Arch Linux 6.9 kernel (x86-64)
