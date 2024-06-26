@@ -4,11 +4,11 @@ cmake_minimum_required(VERSION 3.10)
 project(Litemus VERSION 1.0)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add the executable
-add_executable(Litemus ncurses_lmus.cpp headers/src/executeCmd.cpp headers/src/lmus_cache.cpp headers/src/sanitize.cpp)
+add_executable(Litemus ncurses_lmus.cpp headers/src/executeCmd.cpp headers/src/lmus_cache.cpp)
 
 # Find and include SFML
 find_package(SFML 2.5 COMPONENTS audio REQUIRED)

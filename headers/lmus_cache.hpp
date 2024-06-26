@@ -11,7 +11,6 @@
 #include "nlohmann/json.hpp"
 #include "exitError.h"
 #include "executeCmd.h"
-#include "sanitize.h"
 #include "directoryUtils.hpp"
 
 using json = nlohmann::json;

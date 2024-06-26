@@ -86,25 +86,15 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
     int disc = metadata["format"]["tags"].contains("disc") ? stoi(metadata["format"]["tags"]["disc"].get<string>()) : 0;
     int track = metadata["format"]["tags"].contains("track") ? stoi(metadata["format"]["tags"]["track"].get<string>()) : 0;
     string genre = metadata["format"]["tags"].contains("genre") ? metadata["format"]["tags"]["genre"].get<string>() : "";
-    string lyrics = metadata["format"]["tags"].contains("lyrics-XXX") ? metadata["format"]["tags"]["lyrics-XXX"].get<string>() : "";
-
-    // Use true values for original metadata
-    string trueArtist = artist;
-    string trueTitle = title;
-    string trueAlbum = album;
-
-    // Sanitize strings
-    artist = sanitizeString(artist);
-    album = sanitizeString(album);
-    title = sanitizeString(title);
+    string lyrics = metadata["format"]["tags"].contains("lyrics-XXX") ? metadata["format"]["tags"]["lyrics-XXX"].get<string>() : ""; 
 
     // Check if artist is already in the array
-    if (find(artistsArray.begin(), artistsArray.end(), trueArtist) == artistsArray.end()) {
-        artistsArray.push_back(trueArtist);
+    if (find(artistsArray.begin(), artistsArray.end(), artist) == artistsArray.end()) {
+        artistsArray.push_back(artist);
     }
 
     // Store metadata
-    songMetadata.push_back({fileName, inode, trueArtist, trueAlbum, trueTitle, disc, track, genre, lyrics});
+    songMetadata.push_back({fileName, inode, artist, album, title, disc, track, genre, lyrics});
 }
 // Function to save artists to a file
 void saveArtistsToFile(const json& artistsArray, const string& filePath) {

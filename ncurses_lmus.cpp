@@ -14,12 +14,17 @@
 #include <nlohmann/json.hpp>
 #include "headers/lmus_cache.hpp"
 
+#define COLOR_PAIR_FOCUSED 1 
+#define COLOR_PAIR_SELECTED 3
 #define GREY_BACKGROUND_COLOR 7
 #define LIGHT_GREEN_COLOR 8
 
+// Directory vars
 const std::string songsDirectory = "/home/s1dd/Downloads/Songs/";
+const std::string cacheDirectory = songsDirectory + ".cache/litemus/info/song_names.json";
+const std::string cacheArtistDirectory = songsDirectory + ".cache/litemus/info/artists.json";
 
-const char* title_content = "  LITEMUS - Light Music player                                                                                                                                                                                   ";
+const char* title_content = "  LITEMUS - Light Music player                                                                                                                                                                                 ";
 
 using json = nlohmann::json;
 
@@ -99,33 +104,39 @@ std::pair<std::vector<std::string>, std::vector<std::string>> listSongs(const st
 
 void highlightFocusedWindow(MENU* menu, bool focused) {
     if (focused) {
-        set_menu_fore(menu, COLOR_PAIR(LIGHT_GREEN_COLOR) | A_REVERSE);
-        set_menu_back(menu, A_NORMAL);
+        set_menu_fore(menu, COLOR_PAIR(COLOR_PAIR_SELECTED));
+        set_menu_back(menu, COLOR_PAIR(A_NORMAL));
+        wattron(menu_win(menu), COLOR_PAIR(LIGHT_GREEN_COLOR));
+        box(menu_win(menu), 0, 0);
     } else {
         set_menu_fore(menu, A_NORMAL);
-        set_menu_back(menu, COLOR_PAIR(A_NORMAL));
+        set_menu_back(menu, A_NORMAL);
+        wattroff(menu_win(menu), COLOR_PAIR(LIGHT_GREEN_COLOR));
     }
     wrefresh(menu_win(menu));
 }
 
 void displayHelpWindow(WINDOW* menu_win) {
     werase(menu_win);
+    // set_menu_fore(menu(menu_win), A_NORMAL);
     box(menu_win, 0, 0);
     mvwprintw(menu_win, 1, 2, "Help Controls");
     mvwprintw(menu_win, 3, 2, "p - Pause/Play");
-    mvwprintw(menu_win, 4, 2, "f - Seek forward 5 seconds");
-    mvwprintw(menu_win, 5, 2, "g - Seek backward 5 seconds");
-    mvwprintw(menu_win, 6, 2, "r - Replay song");
-    mvwprintw(menu_win, 7, 2, "j - Move up");
-    mvwprintw(menu_win, 8, 2, "k - Move down");
-    mvwprintw(menu_win, 9, 2, "q - Quit");
-    mvwprintw(menu_win, 10, 2, "n - Next Song");
-    mvwprintw(menu_win, 11, 2, "b - Previous Song");
-    mvwprintw(menu_win, 12, 2, "9 - Increase Volume");
-    mvwprintw(menu_win, 13, 2, "0 - Decrease Volume");
-    mvwprintw(menu_win, 15, 2, "2 - To show help menu");
+    mvwprintw(menu_win, 4, 2, "Enter - Play selected song");
+    mvwprintw(menu_win, 5, 2, "f - Seek forward 5 seconds");
+    mvwprintw(menu_win, 6, 2, "g - Seek backward 5 seconds");
+    mvwprintw(menu_win, 7, 2, "r - Replay current song");
+    mvwprintw(menu_win, 8, 2, "j - Move up");
+    mvwprintw(menu_win, 9, 2, "k - Move down");
+    mvwprintw(menu_win, 10, 2, "q - Quit");
+    mvwprintw(menu_win, 11, 2, "n - Next Song");
+    mvwprintw(menu_win, 12, 2, "b - Previous Song");
+    mvwprintw(menu_win, 13, 2, "9 - Increase Volume");
+    mvwprintw(menu_win, 14, 2, "0 - Decrease Volume");
+    mvwprintw(menu_win, 15, 2, "Tab - Toggle Focused Window");
+    mvwprintw(menu_win, 17, 2, "2 - To show help menu");
 init_pair(GREY_BACKGROUND_COLOR, COLOR_BLACK, COLOR_WHITE);  // Grey background and black text for title
-    mvwprintw(menu_win, 17, 2, "Press '1' to go back to the menu");
+    mvwprintw(menu_win, 20, 2, "Press '1' to go back to the menu");
     wrefresh(menu_win);
 }
 
@@ -169,21 +180,21 @@ void updateStatusBar(WINDOW* status_win, const std::string& songName, const sf::
 
     float volume = music.getVolume();
 
-    firstEnterPressed ? mvwprintw(status_win, 1, 1, " Status:  %s   |   %s   |   %02d:%02d / %02d:%02d   |  Vol. %.0f%%                                                                                        Litemus ", playPauseSymbol, displayName.c_str(), posMinutes, posSeconds, durMinutes, durSeconds, volume) : mvwprintw(status_win, 1, 1, " Status:  %s   |   Unknown Song   |   00:00 / 00:00   |  Vol. %.0f%%                                                                                        Litemus ", launchSymbol, volume);
+    firstEnterPressed ? mvwprintw(status_win, 1, 1, " Status:  %s   |   %s   |   %02d:%02d / %02d:%02d   |  Vol. %.0f%%                                                                                        LITEMUS ", playPauseSymbol, displayName.c_str(), posMinutes, posSeconds, durMinutes, durSeconds, volume) : mvwprintw(status_win, 1, 1, " Status:  %s   |   Unknown Song   |   00:00 / 00:00   |  Vol. %.0f%%                                                                                        LITEMUS ", launchSymbol, volume);
     wattroff(status_win, COLOR_PAIR(5));
     wattroff(status_win, COLOR_PAIR(6));
     wrefresh(status_win);
 }
 
 
-void nextSong(sf::Music& music, const std::vector<std::string>& songs, int& currentSongIndex, const std::string& directory) {
+void nextSong(sf::Music& music, const std::vector<std::string>& songs, int& currentSongIndex) {
     music.stop();
     currentSongIndex = (currentSongIndex + 1) % songs.size();
     std::string nextSongPath = songs[currentSongIndex];
     playMusic(music, nextSongPath);    
 }
 
-void previousSong(sf::Music& music, const std::vector<std::string>& songs, int& currentSongIndex, const std::string& directory) {
+void previousSong(sf::Music& music, const std::vector<std::string>& songs, int& currentSongIndex) {
     music.stop();
     currentSongIndex = (currentSongIndex - 1 + songs.size()) % songs.size();
     std::string prevSongPath = songs[currentSongIndex];
@@ -197,10 +208,36 @@ void adjustVolume(sf::Music& music, float volumeChange) {
     music.setVolume(currentVolume);
 }
 
-int main() {
-    // Initialize ncurses
-    lmus_cache_main(songsDirectory);
+bool showExitConfirmation(WINDOW* parent_win) {
+    int height = 7;
+    int width = 55;
+    int start_y = (LINES - height) / 2;
+    int start_x = (COLS - width) / 2;
 
+    WINDOW* confirm_win = newwin(height, width, start_y, start_x);
+    wattron(confirm_win, COLOR_PAIR(COLOR_GREEN));
+    box(confirm_win, 0, 0);
+    mvwprintw(confirm_win, 1, 9, "Do you really want to exit LITEMUS?");
+    mvwprintw(confirm_win, 4, 8, "     Yes (Y)               No (N)");
+
+    wrefresh(confirm_win);
+
+    int ch;
+    bool exitConfirmed = false;
+    while ((ch = wgetch(confirm_win)) != 'y' && ch != 'Y' && ch != 'n' && ch != 'N' && ch != 27 && ch != 10) {
+        // Wait for valid input
+    }
+    if (ch == 'y' || ch == 'Y' || ch == 10) {
+        exitConfirmed = true;
+    }
+
+    delwin(confirm_win);
+    wrefresh(parent_win); // Refresh the parent window
+
+    return exitConfirmed;
+}
+
+void ncursesSetup() {
     setlocale(LC_ALL, "");
     initscr();
     start_color();
@@ -218,10 +255,14 @@ int main() {
     init_pair(6, COLOR_BLACK, COLOR_WHITE);
     init_pair(GREY_BACKGROUND_COLOR, COLOR_WHITE, GREY_BACKGROUND_COLOR);
     init_pair(LIGHT_GREEN_COLOR, COLOR_GREEN, COLOR_BLACK);
+}
 
-    // Cache directory and song information
-    const std::string cacheDirectory = songsDirectory + ".cache/litemus/info/song_names.json";
-    const std::string cacheArtistDirectory = songsDirectory + ".cache/litemus/info/artists.json";
+int main() {
+    // Initialize ncurses
+    lmus_cache_main(songsDirectory);
+    ncursesSetup();
+
+    // Cache directory and song information 
     std::vector<std::string> allArtists = parseArtists(cacheArtistDirectory);
     auto [songTitles, songPaths] = listSongs(cacheDirectory);
 
@@ -251,20 +292,18 @@ int main() {
 
     // Window dimensions and initialization
     int title_height = 2;
-    int menu_height = std::min(static_cast<int>(songTitles.size()) + 4, 42);
-    int menu_width = 100;
+    int menu_height = std::min(static_cast<int>(songTitles.size()) + 4, 44);
+    int menu_width = 90;
     int title_width = 206;
-    int controls_height = 15;
-    int controls_width = 50;
 
-    WINDOW* title_win = newwin(title_height, title_width, 0, 2);
+    WINDOW* title_win = newwin(title_height, title_width, 0, 0);
     wbkgd(title_win, COLOR_PAIR(GREY_BACKGROUND_COLOR));
     box(title_win, 0, 0);
     wrefresh(title_win);
 
-    WINDOW* artist_menu_win = newwin(menu_height, menu_width, title_height, 2);
-    WINDOW* song_menu_win = newwin(menu_height, menu_width, title_height, menu_width + 2);
-    WINDOW* status_win = newwin(10, 200, LINES - 3, 0);
+    WINDOW* artist_menu_win = newwin(menu_height, menu_width, 1, 0);
+    WINDOW* song_menu_win = newwin(menu_height, menu_width + 29, 1, menu_width);
+    WINDOW* status_win = newwin(10, 200, LINES - 2, 0);
 
     // Set menus to their respective windows
     set_menu_win(artistMenu, artist_menu_win);
@@ -459,12 +498,12 @@ int main() {
                     adjustVolume(music, -10.f);
                     break;
                 case 'n':  // Next song
-                    nextSong(music, songPaths, currentSongIndex, songsDirectory);
+                    nextSong(music, songPaths, currentSongIndex);
                     currentSong = songTitles[currentSongIndex];
                     updateStatusBar(status_win, currentSong, music, firstEnterPressed);
                     break;
                 case 'b':  // Previous song
-                    previousSong(music, songPaths, currentSongIndex, songsDirectory);
+                    previousSong(music, songPaths, currentSongIndex);
                     currentSong = songTitles[currentSongIndex];
                     updateStatusBar(status_win, currentSong, music, firstEnterPressed);
                     break;
@@ -472,6 +511,7 @@ int main() {
                     displayHelpWindow(artist_menu_win);
                     break;
                 case 'q':  // Quit
+                if (showExitConfirmation(song_menu_win)) {
                     music.stop();
                     // Free resources and clean up
                     for (size_t i = 0; i < songTitles.size(); ++i) {
@@ -482,12 +522,28 @@ int main() {
                         free_item(artistItems[i]);
                     }
                     free_menu(artistMenu);
-                    delwin(artist_menu_win);
                     delwin(song_menu_win);
                     delwin(status_win);
-                    delwin(title_win);
                     endwin();
                     return 0;
+                }
+                break;
+                case 'x': // force exit
+                    music.stop();
+                    // Free resources and clean up
+                    for (size_t i = 0; i < songTitles.size(); ++i) {
+                        free_item(songItems[i]);
+                    }
+                    free_menu(songMenu);
+                    for (size_t i = 0; i < allArtists.size(); ++i) {
+                        free_item(artistItems[i]);
+                    }
+                    free_menu(artistMenu);
+                    delwin(song_menu_win);
+                    delwin(status_win);
+                    endwin();
+                    return 0;
+                break;
                 default:
                     mvwprintw(status_win, 12, 2, "Invalid input.");
             }
@@ -495,7 +551,7 @@ int main() {
 
         // Handle song transition when current song ends
         if (music.getStatus() == sf::Music::Stopped && firstEnterPressed) {
-            nextSong(music, songPaths, currentSongIndex, songsDirectory);
+            nextSong(music, songPaths, currentSongIndex);
             currentSong = songTitles[currentSongIndex];
             updateStatusBar(status_win, currentSong, music, firstEnterPressed);
         }
@@ -512,7 +568,7 @@ int main() {
         wattron(title_win, COLOR_PAIR(5));
         wbkgd(title_win, COLOR_PAIR(5) | A_BOLD);
         wattron(title_win, COLOR_PAIR(6));
-        mvwprintw(title_win, 1, 1, title_content);  // Replace with your title
+        mvwprintw(title_win, 0, 1, title_content);  // Replace with your title
         wattroff(title_win, COLOR_PAIR(5));
         wattroff(title_win, COLOR_PAIR(6));
         wrefresh(title_win);
@@ -545,4 +601,3 @@ int main() {
 
     return 0;
 }
-
