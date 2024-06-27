@@ -1,0 +1,13 @@
+Change type: MAJOR
+
+Summary
+
+-> Cleaner UX for both windows (window names, etc)
+
+-> Proper window flow for artist, song done (artist pick -> artists' songs menu) completed
+
+-> Updated status bar to have song genre as well
+
+-> Implemented a safe and effective string search with command `/` (is not complete yet though)
+
+-> Improved windows appearance and structure a bit

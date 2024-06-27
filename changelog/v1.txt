@@ -12,6 +12,6 @@ Summary
 
 3. Refer to working.md to understand the new directory caching method
 
-->Cleanup of a lot of code (further cleanup needed though)
+-> Cleanup of a lot of code (further cleanup needed though)
 
-->Easy access of both windows and all functionality is intact
+-> Easy access of both windows and all functionality is intact

@@ -2,16 +2,16 @@ Change type: MEDIUM
 
 Summary
 
-->Long overdue cleanup of code
+-> Long overdue cleanup of code
 
-->Added green window border to the active window and a much cleaner scroller
+-> Added green window border to the active window and a much cleaner scroller
 
-->Created working.md with a crystal clear explanantion of `headers/lmus_cache.h`
+-> Created working.md with a crystal clear explanantion of `headers/lmus_cache.h`
 
-->Removed sanitize.h as it was redundant
+-> Removed sanitize.h as it was redundant
 
-->Added GNU GPL v3 License
+-> Added GNU GPL v3 License
 
-->Tried to make ncurses_lmus.cpp cleaner, ensuring the next steps of the player will be added smoothly
+-> Tried to make ncurses_lmus.cpp cleaner, ensuring the next steps of the player will be added smoothly
 
-->Updated CMakeLists.txt to compile in C++ 17
+-> Updated CMakeLists.txt to compile in C++ 17
