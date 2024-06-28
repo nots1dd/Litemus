@@ -90,7 +90,7 @@ The caching system implemented in `lmus_cache.hpp` aims to organize and store me
    - **`getFileNameFromInode()`**: Maps an inode back to the corresponding file name.
 
 3. **Metadata Storage:**
-   - **`storeMetadataJSON()`**: Executes `ffprobe` on each file to extract metadata such as artist, album, title, disc number, track number, genre, and lyrics (if available). This metadata is then stored in `SongMetadata` structures.
+   - **`storeMetadataJSON()`**: Executes `ffprobe` on each file to extract metadata such as artist, album, title, disc number, track number, release date, genre, and lyrics (if available). This metadata is then stored in `SongMetadata` structures.
 
 4. **Artists and Songs JSON Creation:**
    - **`saveArtistsToFile()`**: Saves a JSON array of unique artist names to a file (`artists.json`).

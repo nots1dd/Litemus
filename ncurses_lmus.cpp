@@ -9,10 +9,13 @@
 #include <dirent.h>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <cstring>
 #include <unistd.h>
 #include <nlohmann/json.hpp>
 #include "headers/lmus_cache.hpp"
+#include "headers/sflw_helpers.hpp"
+#include "headers/ncurses_helpers.hpp"
 
 #define COLOR_PAIR_FOCUSED 1 
 #define COLOR_PAIR_SELECTED 3
@@ -110,37 +113,7 @@ std::pair<std::vector<std::string>, std::vector<std::string>> listSongs(const st
     return {songTitles, songPaths};
 }
 
-std::string findCurrentGenre(const std::string& cacheFile, const std::string& currentSong) {
-    std::ifstream file(cacheFile);
-    if (!file.is_open()) {
-        std::cerr << "Could not open cache file: " << cacheFile << std::endl;
-        return {};
-    }
-
-    json j;
-    try {
-        file >> j;
-    } catch (const std::exception& e) {
-        std::cerr << "Error parsing JSON: " << e.what() << std::endl;
-        return {};
-    }
-
-    for (auto it = j.begin(); it!= j.end(); ++it) {
-        for (auto albumIt = it.value().begin(); albumIt!= it.value().end(); ++albumIt) {
-            for (auto discIt = albumIt.value().begin(); discIt!= albumIt.value().end(); ++discIt) {
-                for (auto trackIt = discIt.value().begin(); trackIt!= discIt.value().end(); ++trackIt) {
-                    if (trackIt.value()["title"] == currentSong) {
-                        return trackIt.value()["genre"]; // Return the genre
-                    }
-                }
-            }
-        }
-    }
-
-    return {}; // Return empty string if genre not found
-}
-
-std::string findCurrentArtist(const std::string& cacheFile, const std::string& currentSong) {
+std::pair<std::string, std::string> findCurrentGenreArtist(const std::string& cacheFile, const std::string& currentSong, std::string& currentLyrics) {
     std::ifstream file(cacheFile);
     if (!file.is_open()) {
         std::cerr << "Could not open cache file: " << cacheFile << std::endl;
@@ -160,178 +133,27 @@ std::string findCurrentArtist(const std::string& cacheFile, const std::string& c
             for (auto discIt = albumIt.value().begin(); discIt != albumIt.value().end(); ++discIt) {
                 for (auto trackIt = discIt.value().begin(); trackIt != discIt.value().end(); ++trackIt) {
                     if (trackIt.value()["title"] == currentSong) {
-                        return it.key(); // Return the artist name
+                        std::string genre = trackIt.value()["genre"];
+                        std::string artist = it.key();
+                        currentLyrics = trackIt.value()["lyrics"];
+                        return {genre, artist}; // Return the genre and artist as a pair
                     }
                 }
             }
         }
     }
 
-    return {}; // Return empty string if artist not found
+    return {}; // Return empty pair if genre and artist not found
 }
-void highlightFocusedWindow(MENU* menu, bool focused) {
-    if (focused) {
-        set_menu_fore(menu, COLOR_PAIR(COLOR_PAIR_SELECTED));
-        set_menu_back(menu, COLOR_PAIR(A_NORMAL));
-        wattron(menu_win(menu), COLOR_PAIR(LIGHT_GREEN_COLOR));
-        box(menu_win(menu), 0, 0);
-    } else {
-        set_menu_fore(menu, A_NORMAL);
-        set_menu_back(menu, A_NORMAL);
-        wattroff(menu_win(menu), COLOR_PAIR(LIGHT_GREEN_COLOR));
+
+std::vector<std::string> splitStringByNewlines(const std::string& str) {
+    std::vector<std::string> lines;
+    std::istringstream stream(str);
+    std::string line;
+    while (std::getline(stream, line)) {
+        lines.push_back(line);
     }
-    wrefresh(menu_win(menu));
-}
-
-void displayHelpWindow(WINDOW* menu_win) {
-    werase(menu_win);
-    // set_menu_fore(menu(menu_win), A_NORMAL);
-    box(menu_win, 0, 0);
-    mvwprintw(menu_win, 1, 2, "Help Controls");
-    mvwprintw(menu_win, 3, 2, "p - Pause/Play");
-    mvwprintw(menu_win, 4, 2, "Enter - Play selected song");
-    mvwprintw(menu_win, 5, 2, "f - Seek forward 5 seconds");
-    mvwprintw(menu_win, 6, 2, "g - Seek backward 5 seconds");
-    mvwprintw(menu_win, 7, 2, "r - Replay current song");
-    mvwprintw(menu_win, 8, 2, "j - Move up");
-    mvwprintw(menu_win, 9, 2, "k - Move down");
-    mvwprintw(menu_win, 10, 2, "q - Quit");
-    mvwprintw(menu_win, 11, 2, "n - Next Song");
-    mvwprintw(menu_win, 12, 2, "b - Previous Song");
-    mvwprintw(menu_win, 13, 2, "9 - Increase Volume");
-    mvwprintw(menu_win, 14, 2, "0 - Decrease Volume");
-    mvwprintw(menu_win, 15, 2, "/ - String search in focused window");
-    mvwprintw(menu_win, 16, 2, "Tab - Toggle Focused Window");
-    mvwprintw(menu_win, 18, 2, "2 - To show help menu");
-init_pair(GREY_BACKGROUND_COLOR, COLOR_BLACK, COLOR_WHITE);  // Grey background and black text for title
-    mvwprintw(menu_win, 21, 2, "Press '1' to go back to the menu");
-    wrefresh(menu_win);
-}
-
-void playMusic(sf::Music& music, const std::string& songPath) {
-    if (music.getStatus() == sf::Music::Playing) {
-        music.stop();
-    }
-    if (!music.openFromFile(songPath)) {
-        std::cerr << "Error loading file" << std::endl;
-    } else {
-        music.play();
-    }
-}
-
-void printTitle(WINDOW* win, const char* title) {
-    wattron(win, A_BOLD | COLOR_PAIR(1));
-    mvwprintw(win, 1, (getmaxx(win) - strlen(title)) / 2, "%s", title);
-    wattroff(win, A_BOLD | COLOR_PAIR(1));
-    wrefresh(win);
-}
-
-void updateStatusBar(WINDOW* status_win, const std::string& songName, const std::string& artistName, const std::string& songGenre, const sf::Music& music, bool firstEnterPressed) {
-    const int maxSongNameLength = 50;
-    const std::string overallSongName = songName + " by " + artistName;
-    std::string displayName = overallSongName.length() > maxSongNameLength ? overallSongName.substr(0, maxSongNameLength) + "..." : overallSongName;
-
-    wmove(status_win, 1, 1);
-    wclrtoeol(status_win);
-
-    wattron(status_win, COLOR_PAIR(5));
-    wbkgd(status_win, COLOR_PAIR(5) | A_BOLD);
-    wattron(status_win, COLOR_PAIR(6));
-
-    const char* playPauseSymbol = (music.getStatus() == sf::Music::Playing) ? "<>" : "!!";
-    const char* launchSymbol = "--";
-    sf::Time currentTime = music.getPlayingOffset();
-    sf::Time duration = music.getDuration();
-    int posMinutes = static_cast<int>(currentTime.asSeconds()) / 60;
-    int posSeconds = static_cast<int>(currentTime.asSeconds()) % 60;
-    int durMinutes = static_cast<int>(duration.asSeconds()) / 60;
-    int durSeconds = static_cast<int>(duration.asSeconds()) % 60;
-
-    float volume = music.getVolume();
-
-    firstEnterPressed ? mvwprintw(status_win, 1, 1, "   %s  | %s |   %02d:%02d / %02d:%02d   |  Vol. %.0f%%                                                                                     %s  | LITEMUS ", playPauseSymbol, displayName.c_str(), posMinutes, posSeconds, durMinutes, durSeconds, volume, songGenre.c_str()) : mvwprintw(status_win, 1, 1, "  %s   |  Unknown Song   |   00:00 / 00:00   |  Vol. %.0f%%                                                                                        LITEMUS ", launchSymbol, volume);
-    wattroff(status_win, COLOR_PAIR(5));
-    wattroff(status_win, COLOR_PAIR(6));
-    wrefresh(status_win);
-}
-
-
-void nextSong(sf::Music& music, const std::vector<std::string>& songs, int& currentSongIndex) {
-    music.stop();
-    currentSongIndex = (currentSongIndex + 1) % songs.size();
-    std::string nextSongPath = songs[currentSongIndex];
-    playMusic(music, nextSongPath);    
-}
-
-void previousSong(sf::Music& music, const std::vector<std::string>& songs, int& currentSongIndex) {
-    music.stop();
-    currentSongIndex = (currentSongIndex - 1 + songs.size()) % songs.size();
-    std::string prevSongPath = songs[currentSongIndex];
-    playMusic(music, prevSongPath);
-}
-
-void adjustVolume(sf::Music& music, float volumeChange) {
-    float currentVolume = music.getVolume();
-    currentVolume += volumeChange;
-    currentVolume = std::max(0.f, std::min(100.f, currentVolume));
-    music.setVolume(currentVolume);
-}
-
-bool showExitConfirmation(WINDOW* parent_win) {
-    int height = 7;
-    int width = 55;
-    int start_y = (LINES - height) / 2;
-    int start_x = (COLS - width) / 2;
-
-    WINDOW* confirm_win = newwin(height, width, start_y, start_x);
-    wattron(confirm_win, COLOR_PAIR(COLOR_GREEN));
-    box(confirm_win, 0, 0);
-    mvwprintw(confirm_win, 1, 9, "Do you really want to exit LITEMUS?");
-    mvwprintw(confirm_win, 4, 8, "     Yes (Y)               No (N)");
-
-    wrefresh(confirm_win);
-
-    int ch;
-    bool exitConfirmed = false;
-    while ((ch = wgetch(confirm_win)) != 'y' && ch != 'Y' && ch != 'n' && ch != 'N' && ch != 27 && ch != 10) {
-        // Wait for valid input
-    }
-    if (ch == 'y' || ch == 'Y' || ch == 10) {
-        exitConfirmed = true;
-    }
-
-    delwin(confirm_win);
-    wrefresh(parent_win); // Refresh the parent window
-
-    return exitConfirmed;
-}
-
-void ncursesSetup() {
-    setlocale(LC_ALL, "");
-    initscr();
-    start_color();
-    cbreak();
-    noecho();
-    keypad(stdscr, TRUE);
-    curs_set(0);
-
-    // Initialize color pairs
-    init_pair(1, COLOR_CYAN, COLOR_BLACK);
-    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
-    init_pair(3, COLOR_GREEN, COLOR_BLACK);
-    init_pair(4, COLOR_BLUE, COLOR_BLACK);
-    init_pair(5, COLOR_BLACK, COLOR_BLACK);
-    init_pair(6, COLOR_BLACK, COLOR_WHITE);
-    init_pair(GREY_BACKGROUND_COLOR, COLOR_WHITE, GREY_BACKGROUND_COLOR);
-    init_pair(LIGHT_GREEN_COLOR, COLOR_GREEN, COLOR_BLACK);
-}
-
-void ncursesRefreshWin(WINDOW* artist_menu_win, WINDOW* song_menu_win, WINDOW* status_win, WINDOW* title_win) {
-  // Refresh all windows
-  wrefresh(artist_menu_win);
-  wrefresh(song_menu_win);
-  wrefresh(status_win);
-  wrefresh(title_win);
+    return lines;
 }
 
 int main() {
@@ -341,10 +163,11 @@ int main() {
 
     // Cache directory and song information 
     std::vector<std::string> allArtists = parseArtists(cacheArtistDirectory);
-    auto [songTitles, songPaths] = listSongs(cacheDirectory, allArtists[0]);
+    auto [songTitles, songPaths] = listSongs(cacheDirectory, allArtists[0]); // default to the first artist
+ 
 
     // Check if songs are found
-    if (songTitles.empty() || songPaths.empty()) {
+    if (songTitles.empty() || songPaths.empty() || allArtists.empty()) {
         printw("No songs found in directory.\n");
         refresh();
         endwin();
@@ -380,7 +203,7 @@ int main() {
 
     WINDOW* artist_menu_win = newwin(menu_height, menu_width, 1, 0);
     WINDOW* song_menu_win = newwin(menu_height, menu_width + 29, 1, menu_width);
-    WINDOW* status_win = newwin(10, 200, LINES - 2, 0);
+    WINDOW* status_win = newwin(10, 230, LINES - 2, 0);
 
     // Set menus to their respective windows
     set_menu_win(artistMenu, artist_menu_win);
@@ -392,14 +215,11 @@ int main() {
     set_menu_mark(songMenu, " > ");
 
     set_menu_format(artistMenu, menu_height, 0);
-    set_menu_format(songMenu, menu_height, 0); 
+    set_menu_format(songMenu, menu_height, 0);
 
-    box(artist_menu_win, 0, 0);
-    box(song_menu_win, 0, 0);
-    box(status_win, 0, 0);
-    box(title_win, 0, 0); 
+    ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "box");
 
-   ncursesRefreshWin(artist_menu_win, song_menu_win, status_win, title_win); 
+   ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "refresh"); 
 
     // Initialize SFML Music
     sf::Music music;
@@ -407,6 +227,7 @@ int main() {
     std::string currentSong = songTitles.empty() ? "" : songTitles[0];
     std::string currentArtist = allArtists.empty() ? "" : allArtists[0];
     std::string currentGenre = "";
+    std::string currentLyrics = "";
 
     // Timeout for getch() to avoid blocking indefinitely
     timeout(100);
@@ -414,6 +235,7 @@ int main() {
     // Flag to track first enter press
     bool firstEnterPressed = false;
     bool showingArtists = true;  // Start with artist menu in focus
+    bool showingLyrics = false;
 
     highlightFocusedWindow(artistMenu, true);
     highlightFocusedWindow(songMenu, false);
@@ -499,43 +321,13 @@ int main() {
                     }
                     break;
                 case KEY_RIGHT:
-                  if (showingArtists) {
-                      int itemCount = item_count(artistMenu);
-                      ITEM* curItem = current_item(artistMenu);
-                      int currentIndex = item_index(curItem);
-                      int pageSize = getmaxy(artist_menu_win) - 2; // subtract 2 for borders
-                      if (currentIndex + pageSize < itemCount) {
-                          werase(artist_menu_win);
-                          menu_driver(artistMenu, REQ_SCR_DPAGE);
-                      }
-                  } else {
-                      int itemCount = item_count(songMenu);
-                      ITEM* curItem = current_item(songMenu);
-                      int currentIndex = item_index(curItem);
-                      int pageSize = getmaxy(song_menu_win) - 2; // subtract 2 for borders
-                      if (currentIndex + pageSize < itemCount) {
-                          werase(song_menu_win);
-                          menu_driver(songMenu, REQ_SCR_DPAGE);
-                      }
-                  }
+                  music.setPlayingOffset(music.getPlayingOffset() + sf::seconds(5));
                   break;
                 case KEY_LEFT:
-                    if (showingArtists) {
-                        ITEM* curItem = current_item(artistMenu);
-                        int currentIndex = item_index(curItem);
-                        int pageSize = getmaxy(artist_menu_win) - 2; // subtract 2 for borders
-                        if (currentIndex - pageSize >= 0) {
-                            werase(artist_menu_win);
-                            menu_driver(artistMenu, REQ_SCR_UPAGE);
-                        }
+                    if (music.getPlayingOffset() > sf::seconds(5)) {
+                          music.setPlayingOffset(music.getPlayingOffset() - sf::seconds(5));
                     } else {
-                        ITEM* curItem = current_item(songMenu);
-                        int currentIndex = item_index(curItem);
-                        int pageSize = getmaxy(song_menu_win) - 2; // subtract 2 for borders
-                        if (currentIndex - pageSize >= 0) {
-                            werase(song_menu_win);
-                            menu_driver(songMenu, REQ_SCR_UPAGE);
-                        }
+                          music.setPlayingOffset(sf::seconds(0));
                     }
                     break;
             case '/': // or case CTRL_F: for Ctrl+F
@@ -571,7 +363,7 @@ int main() {
                 }
             } else if (c == 27) { // escape
                 break;
-            } else if (isprint(c) && isalnum(c)) { // only add printable characters to the input string
+            } else if (isprint(c)) { // only add printable characters to the input string
                 search_str[i++] = c;
                 search_str[i] = '\0'; // null-terminate the string
                 mvwprintw(input_win, 1, 1, "%*s", input_width - 25, search_str); // print the input string
@@ -612,15 +404,11 @@ int main() {
               if (showingArtists) {
                   // Show details of selected artist (if needed)
                   ITEM* artItem = current_item(artistMenu);
-                  int artselectedIndex = item_index(artItem);
-                  set_menu_win(artistMenu, artist_menu_win);
-                  set_menu_sub(artistMenu, derwin(artist_menu_win, menu_height - 3, menu_width - 2, 2, 1));
-                  set_menu_mark(artistMenu, " > ");
+                  int artselectedIndex = item_index(artItem); 
                   post_menu(artistMenu);
                   post_menu(songMenu);
                   box(artist_menu_win, 0, 0);
                   const char* selectedArtist = allArtists[artselectedIndex].c_str();
-                  // mvwprintw(song_menu_win, 1, 2, selectedArtist);
 
                   // Update song menu with songs of the selected artist
                       auto [newSongTitles, newSongPaths] = listSongs(cacheDirectory, selectedArtist);
@@ -638,8 +426,8 @@ int main() {
                       set_menu_win(songMenu, song_menu_win);
                       set_menu_sub(songMenu, derwin(song_menu_win, menu_height - 3, menu_width - 2, 2, 1));
                       set_menu_mark(songMenu, " > ");
-                      post_menu(songMenu);
                       set_menu_format(songMenu, menu_height, 0);
+                      post_menu(songMenu);
 
                       songTitles = newSongTitles;
                       songPaths = newSongPaths;
@@ -652,10 +440,7 @@ int main() {
                   } else {
                       // Play selected song from song menu
                       ITEM* curItem = current_item(songMenu);
-                      int selectedIndex = item_index(curItem);
-                      set_menu_win(songMenu, song_menu_win);
-                      set_menu_sub(songMenu, derwin(song_menu_win, menu_height - 3, menu_width - 2, 2, 1));
-                      set_menu_mark(songMenu, " > ");
+                      int selectedIndex = item_index(curItem); 
                       post_menu(songMenu);
                       post_menu(artistMenu);
                       box(song_menu_win, 0, 0);
@@ -666,17 +451,10 @@ int main() {
                           currentSongIndex = selectedIndex;
                           playMusic(music, songPaths[currentSongIndex]);
                           currentSong = songTitles[currentSongIndex];
-                          currentArtist = findCurrentArtist(cacheDirectory, currentSong);
-                          currentGenre = findCurrentGenre(cacheDirectory, currentSong);
-                          updateStatusBar(status_win, currentSong, currentArtist, currentGenre,  music, firstEnterPressed);
-                          // for (int i=0;i<item_count(songMenu);i++) {
-                          //   item_opts_off(songItems[i], O_SELECTABLE);
-                          //   item_init(songItems[i], NULL, NULL, FALSE, COLOR_PAIR_SELECTED);
-                          // }
-                          // item_opts_on(songItems[selectedIndex], O_SELECTABLE);
-                          // item_init(songItems[selectedIndex], NULL, NULL, TRUE, COLOR_PAIR_SELECTED);
-                          // refresh();
-                          
+                          auto resultGA = findCurrentGenreArtist(cacheDirectory, currentSong, currentLyrics);
+                          currentGenre = resultGA.first;
+                          currentArtist = resultGA.second;
+                          updateStatusBar(status_win, currentSong, currentArtist, currentGenre,  music, firstEnterPressed, showingLyrics);                          
                       }
                       firstEnterPressed = true;
                   }
@@ -689,11 +467,11 @@ int main() {
                         }
                         break;
                     case 'f':  // Fast-forward (skip 5 seconds)
-                        music.setPlayingOffset(music.getPlayingOffset() + sf::seconds(5));
+                        music.setPlayingOffset(music.getPlayingOffset() + sf::seconds(60));
                         break;
                     case 'g':  // Rewind (go back 5 seconds)
-                        if (music.getPlayingOffset() > sf::seconds(5)) {
-                            music.setPlayingOffset(music.getPlayingOffset() - sf::seconds(5));
+                        if (music.getPlayingOffset() > sf::seconds(60)) {
+                            music.setPlayingOffset(music.getPlayingOffset() - sf::seconds(60));
                         } else {
                             music.setPlayingOffset(sf::seconds(0));
                         }
@@ -712,18 +490,84 @@ int main() {
                         if (firstEnterPressed) {
                         nextSong(music, songPaths, currentSongIndex);
                         currentSong = songTitles[currentSongIndex];
-                        updateStatusBar(status_win, currentSong, currentArtist, currentGenre,  music, firstEnterPressed);
+                        updateStatusBar(status_win, currentSong, currentArtist, currentGenre,  music, firstEnterPressed, showingLyrics);
                       }
                     break;
                 case 'b':  // Previous song
                     if (firstEnterPressed) {
                       previousSong(music, songPaths, currentSongIndex);
                       currentSong = songTitles[currentSongIndex];
-                      updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed);
+                      updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
                     }
                     break;
                 case '2':  // Display help window
                     displayHelpWindow(artist_menu_win);
+                    break;
+                case '3':
+                    if (currentLyrics.size() != 0) { 
+                      werase(artist_menu_win);
+                      int x,y;
+                      getmaxyx(stdscr, y, x); // get the screen dimensions
+                      int warning_width = 55; // adjust this to your liking
+                      int warning_height = 5;
+                      int warning_x = x / 2; // center the input field
+                      int warning_y = y / 2; // center the input field
+                      std::vector<std::string> lines = splitStringByNewlines(currentLyrics);
+                      WINDOW *warning_win = newwin(warning_height, warning_width, warning_y, warning_x);
+                      wattron(warning_win, COLOR_PAIR(COLOR_RED));
+                      box(warning_win, 0, 0); // add a border around the input field
+                      mvwprintw(warning_win, 0, 2, " Warning: ");
+                      mvwprintw(warning_win, 1, 2, " You are in Lyrics view (&&), press 1 to exit! "); // prompt the user
+                      mvwprintw(warning_win, 3, 2, " NO KEYBINDS EXCEPT KEY_UP and KEY_DOWN WILL WORK!!");
+                      wrefresh(warning_win);
+                      
+                      WINDOW* lyrics_win = derwin(artist_menu_win, menu_height - 2, menu_width - 2, 1, 1);
+                      mvwprintw(artist_menu_win, 0, 2, " Lyrics: ");
+
+                      int start_line = 0; // To keep track of the starting line for scrolling
+
+                      // Initial display of lyrics
+                      printMultiLine(lyrics_win, lines, start_line);
+                      wrefresh(lyrics_win);
+
+                      int ch;
+                      while ((ch = getch()) != '1') { // Press '1' to exit
+                          switch (ch) {
+                              case KEY_UP:
+                                  if (start_line > 0) {
+                                      start_line--;
+                                  }
+                                  break;
+                              case KEY_DOWN:
+                                  if (start_line + menu_height - 2 < lines.size()) {
+                                      start_line++;
+                                  }
+                                  break; 
+                          }
+                          werase(lyrics_win); // Clear the sub-window
+                          printMultiLine(lyrics_win, lines, start_line);
+                          showingLyrics = true;
+                          updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
+                          wrefresh(lyrics_win);
+                          
+                      }
+
+                      delwin(lyrics_win);
+                      delwin(warning_win);
+                    
+                    } else {
+                      mvwprintw(artist_menu_win, 2, 20, "NO LYRICS FOR THIS SONG!");
+                      mvwprintw(artist_menu_win, 4, 20, "Redirecting to main window...");
+                      std::this_thread::sleep_for(std::chrono::seconds(1));
+                    }
+                    werase(artist_menu_win);
+                    // werase(song_menu_win);
+                    set_menu_win(artistMenu, artist_menu_win);
+                    set_menu_sub(artistMenu, derwin(artist_menu_win, menu_height - 3, menu_width - 2, 2, 1));
+                    set_menu_mark(artistMenu, " > ");
+                    set_menu_format(artistMenu, menu_height, 0);
+                    post_menu(artistMenu);
+                    showingLyrics = false;
                     break;
                 case 'q':  // Quit
                 if (showExitConfirmation(song_menu_win)) {
@@ -768,11 +612,11 @@ int main() {
         if (music.getStatus() == sf::Music::Stopped && firstEnterPressed) {
             nextSong(music, songPaths, currentSongIndex);
             currentSong = songTitles[currentSongIndex];
-            updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed);
+            updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
         }
 
         // Update status bar and refresh windows
-        updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed);
+        updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
 
         wrefresh(artist_menu_win);
         wrefresh(song_menu_win);
@@ -791,7 +635,7 @@ int main() {
         wrefresh(title_win);
         post_menu(artistMenu);  // Post the active menu
         post_menu(songMenu);
-        ncursesRefreshWin(artist_menu_win, song_menu_win, status_win, title_win);
+        ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "refresh");
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Optional delay
     }
@@ -807,10 +651,7 @@ int main() {
         free_item(artistItems[i]);
     }
     free_menu(artistMenu);
-    delwin(artist_menu_win);
-    delwin(song_menu_win);
-    delwin(status_win);
-    delwin(title_win);
+    ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "delete");
     endwin();
 
     return 0;

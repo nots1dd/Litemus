@@ -24,6 +24,7 @@ struct SongMetadata {
     int disc;
     int track;
     string genre;
+    string date;
     string lyrics;
 };
 
@@ -86,6 +87,7 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
     int disc = metadata["format"]["tags"].contains("disc") ? stoi(metadata["format"]["tags"]["disc"].get<string>()) : 0;
     int track = metadata["format"]["tags"].contains("track") ? stoi(metadata["format"]["tags"]["track"].get<string>()) : 0;
     string genre = metadata["format"]["tags"].contains("genre") ? metadata["format"]["tags"]["genre"].get<string>() : "";
+    string date = metadata["format"]["tags"].contains("date") ? metadata["format"]["tags"]["date"].get<string>() : "";
     string lyrics = metadata["format"]["tags"].contains("lyrics-XXX") ? metadata["format"]["tags"]["lyrics-XXX"].get<string>() : ""; 
 
     // Check if artist is already in the array
@@ -94,7 +96,7 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
     }
 
     // Store metadata
-    songMetadata.push_back({fileName, inode, artist, album, title, disc, track, genre, lyrics});
+    songMetadata.push_back({fileName, inode, artist, album, title, disc, track, genre, date, lyrics});
 }
 // Function to save artists to a file
 void saveArtistsToFile(const json& artistsArray, const string& filePath) {
@@ -130,6 +132,7 @@ void storeSongsJSON(const string& filePath, const vector<SongMetadata>& songMeta
                 {"disc", song.disc},
                 {"track", song.track},
                 {"genre", song.genre},
+                {"date", song.date},
                 {"lyrics", song.lyrics}
             };
 

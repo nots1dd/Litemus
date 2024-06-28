@@ -1,0 +1,13 @@
+Change Type: MAJOR
+
+Summary
+
+-> Massive Code refactor (not done yet but progress made)
+
+-> Implemented lyrics view in window 3 (with scrolling options)
+
+-> Code is still a bit cluttered (maybe a few redundancies are present too) but most are noted or taken care of
+
+-> Updated lmus_cache.cpp to also parse the release date and year of a song as well (for future implementation)
+
+-> Moving a step closer toward a better and more efficient TUI and UX with functional changes to window management
