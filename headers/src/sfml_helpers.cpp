@@ -1,4 +1,4 @@
-#include "../sflw_helpers.hpp"
+#include "../sfml_helpers.hpp"
 
 void playMusic(sf::Music& music, const std::string& songPath) {
     if (music.getStatus() == sf::Music::Playing) {

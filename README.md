@@ -1,12 +1,12 @@
 # LiteMus - Light Music Player written in C++
 
-## Fast and Interactive music player that uses SLFW, ncurses, nlohmann json libraries
+## Fast and Interactive music player that uses SFML, ncurses, nlohmann json libraries
 
 ### FEATURES:
 
 1. Insanely fast sorting and caching system thanks to Inode data structure of filesystem and C++ libraries (lmus_cache.h)
 2. Ncurses library for making the beautiful TUI
-3. SFLW for the audio API for smooth audio quality and FEATURES
+3. SFML for the audio API for smooth audio quality and FEATURES
 4. Basic song controls are implemented (play, pause, seek forward/backward, next song , prev song)
 
 ![litemusreadme1](https://github.com/nots1dd/Litemus/assets/140317709/c270df7d-af84-4cf9-a0b7-b475f27a2081)
@@ -19,7 +19,7 @@
 
 ->  Clone this repository `https://github.com/nots1dd/Litemus.git`
 
--> Install the required C++ libraries `ncurses`, `SFLW`, `nlohmann-json`
+-> Install the required C++ libraries `ncurses`, `SFML`, `nlohmann-json`
 
 ->  Then run `cmake -S .-B build/`
 

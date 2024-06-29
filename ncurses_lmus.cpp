@@ -1,7 +1,7 @@
 #include <thread>
 #include <chrono>
 #include "headers/lmus_cache.hpp"
-#include "headers/sflw_helpers.hpp"
+#include "headers/sfml_helpers.hpp"
 #include "headers/ncurses_helpers.hpp"
 #include "headers/parsers.hpp"
 
