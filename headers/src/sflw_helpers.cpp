@@ -32,3 +32,10 @@ void adjustVolume(sf::Music& music, float volumeChange) {
     music.setVolume(currentVolume);
 }
 
+char* strdup(const char* s) {
+    size_t len = strlen(s);
+    char* dup = new char[len + 1];
+    strcpy(dup, s);
+    return dup;
+}
+

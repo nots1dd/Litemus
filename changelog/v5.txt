@@ -1,0 +1,9 @@
+Change type: MINOR
+
+Summary
+
+-> More code refactor (redundancies, more modularity)
+
+-> Added blue like text highlight to lyrics along with other UI/UX changes to lyrics view
+
+-> Added parsers.hpp and its functionalities to parse everything from lmus_cache.hpp

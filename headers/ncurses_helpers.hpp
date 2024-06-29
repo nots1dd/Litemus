@@ -13,5 +13,9 @@ void updateStatusBar(WINDOW* status_win, const std::string& songName, const std:
 bool showExitConfirmation(WINDOW* parent_win);
 void highlightFocusedWindow(MENU* menu, bool focused);
 void printMultiLine(WINDOW* win, const std::vector<std::string>& lines, int start_line);
+void ncursesMenuSetup(MENU* Menu, WINDOW* win, int menu_height, int menu_width);
+void move_menu_down(MENU* artistMenu, MENU* songMenu, bool showingArtists);
+void move_menu_up(MENU* artistMenu, MENU* songMenu, bool showingArtists);
+ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles);
 
 #endif

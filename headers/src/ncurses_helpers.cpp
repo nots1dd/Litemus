@@ -49,26 +49,26 @@ void displayHelpWindow(WINDOW* menu_win) {
     werase(menu_win);
     // set_menu_fore(menu_win, A_NORMAL);
     box(menu_win, 0, 0);
-    mvwprintw(menu_win, 2, 2, "HELP WINDOW");
-    mvwprintw(menu_win, 4, 2, "p - Pause/Play");
-    mvwprintw(menu_win, 5, 2, "Enter - Play selected song");
-    mvwprintw(menu_win, 6, 2, "Right Arrow - Seek forward 5 seconds");
-    mvwprintw(menu_win, 7, 2, "Left Arrow - Seek backward 5 seconds");
-    mvwprintw(menu_win, 8, 2, "f - Seek forward 60 seconds");
-    mvwprintw(menu_win, 9, 2, "g - Seek backward 60 seconds");
-    mvwprintw(menu_win, 10, 2, "r - Replay current song");
-    mvwprintw(menu_win, 11, 2, "j - Move up");
-    mvwprintw(menu_win, 12, 2, "k - Move down");
-    mvwprintw(menu_win, 13, 2, "q - Quit");
-    mvwprintw(menu_win, 14, 2, "n - Next Song");
-    mvwprintw(menu_win, 15, 2, "b - Previous Song");
-    mvwprintw(menu_win, 16, 2, "9 - Increase Volume");
-    mvwprintw(menu_win, 17, 2, "0 - Decrease Volume");
-    mvwprintw(menu_win, 18, 2, "/ - String search in focused window");
-    mvwprintw(menu_win, 19, 2, "Tab - Toggle Focused Window");
-    mvwprintw(menu_win, 21, 2, "2 - To show help menu");
+    mvwprintw(menu_win, 0, 2, " HELP WIN: ");
+    mvwprintw(menu_win, 2, 2, "p - Pause/Play");
+    mvwprintw(menu_win, 3, 2, "Enter - Play selected song");
+    mvwprintw(menu_win, 4, 2, "Right Arrow - Seek forward 5 seconds");
+    mvwprintw(menu_win, 5, 2, "Left Arrow - Seek backward 5 seconds");
+    mvwprintw(menu_win, 6, 2, "f - Seek forward 60 seconds");
+    mvwprintw(menu_win, 7, 2, "g - Seek backward 60 seconds");
+    mvwprintw(menu_win, 8, 2, "r - Replay current song");
+    mvwprintw(menu_win, 9, 2, "j - Move up");
+    mvwprintw(menu_win, 10, 2, "k - Move down");
+    mvwprintw(menu_win, 11, 2, "q - Quit");
+    mvwprintw(menu_win, 12, 2, "n - Next Song");
+    mvwprintw(menu_win, 13, 2, "b - Previous Song");
+    mvwprintw(menu_win, 14, 2, "9 - Increase Volume");
+    mvwprintw(menu_win, 15, 2, "0 - Decrease Volume");
+    mvwprintw(menu_win, 16, 2, "/ - String search in focused window");
+    mvwprintw(menu_win, 17, 2, "Tab - Toggle Focused Window");
+    mvwprintw(menu_win, 19, 2, "2 - To show help menu");
 init_pair(GREY_BACKGROUND_COLOR, COLOR_BLACK, COLOR_WHITE);  // Grey background and black text for title
-    mvwprintw(menu_win, 23, 2, "Press '1' to go back to the menu");
+    mvwprintw(menu_win, 21, 2, "Press '1' to go back to the menu");
     wrefresh(menu_win);
 }
 
@@ -162,3 +162,67 @@ void printMultiLine(WINDOW* win, const std::vector<std::string>& lines, int star
         mvwprintw(win, i, 0, "%s", lines[start_line + i].c_str());
     }
 }
+
+void ncursesMenuSetup(MENU* Menu, WINDOW* win, int menu_height, int menu_width) {
+  set_menu_win(Menu, win);
+  set_menu_sub(Menu, derwin(win, menu_height - 3, menu_width - 2, 2, 1));
+  set_menu_mark(Menu, " > "); 
+}
+
+void move_menu_down(MENU* artistMenu, MENU* songMenu, bool showingArtists) {
+    if (showingArtists) {
+        int itemCount = item_count(artistMenu);
+        ITEM* curItem = current_item(artistMenu);
+        int currentIndex = item_index(curItem);
+        if (currentIndex < itemCount - 1) {
+            werase(menu_win(artistMenu));
+            menu_driver(artistMenu, REQ_DOWN_ITEM); 
+        }
+    } else {
+        int itemCount = item_count(songMenu);
+        ITEM* curItem = current_item(songMenu);
+        int currentIndex = item_index(curItem);
+        if (currentIndex < itemCount - 1) {
+            werase(menu_win(songMenu));
+            menu_driver(songMenu, REQ_DOWN_ITEM); 
+        }
+    }
+}
+
+void move_menu_up(MENU* artistMenu, MENU* songMenu, bool showingArtists) {
+  if (showingArtists) {
+      ITEM* curItem = current_item(artistMenu);
+      int currentIndex = item_index(curItem);
+      if (currentIndex > 0) {
+          werase(menu_win(artistMenu));
+          menu_driver(artistMenu, REQ_UP_ITEM);
+      }
+  } else {
+      ITEM* curItem = current_item(songMenu);
+      int currentIndex = item_index(curItem);
+      if (currentIndex > 0) {
+          werase(menu_win(songMenu));
+          menu_driver(songMenu, REQ_UP_ITEM);
+      }
+  }
+}
+
+ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles) {
+  if (name == "artist") {
+    ITEM** artistItems = new ITEM*[allArtists.size() + 1];
+    for (size_t i = 0; i < allArtists.size(); ++i) {
+        artistItems[i] = new_item(allArtists[i].c_str(), "");
+    }
+    artistItems[allArtists.size()] = nullptr;
+    return artistItems;
+  }
+  else if (name == "song") {
+    ITEM** songItems = new ITEM*[songTitles.size() + 1];
+    for (size_t i = 0; i < songTitles.size(); ++i) {
+        songItems[i] = new_item(songTitles[i].c_str(), "");
+    }
+    songItems[songTitles.size()] = nullptr;
+    return songItems;
+  }
+}
+
