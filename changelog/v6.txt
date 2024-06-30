@@ -1,0 +1,20 @@
+Change type: MEDIUM
+
+Summary
+
+-> lmus_cache process is now within a clean TUI with a progress bar and time remaining (time remaining is not perfect but it will do for now)
+
+-> Tried to remove the while loop for lyrics_win to scroll but didnt work (will try and itemize each line in a duplicate of artistMenu and display it to avoid any loops)
+
+-> Updated a few functions to make code more modular
+
+-> Renamed main cpp file to litemus.cpp
+
+-> Added mute function
+
+-> Updated lyrics win to have song name and its artist for better UX
+
+-> The lyrics_win while loop now has play/pause and +- vol control (aim is if we cannot remove this loop, only player vol control is accessible when in lyrics view)
+
+-> Fixed some flickering issues when in lyrics view
+

@@ -1,3 +1,4 @@
+#include <ncurses.h>
 #include "../lmus_cache.hpp"
 
 using json = nlohmann::json;
@@ -12,7 +13,7 @@ const string PINK = "\033[35m";
 const string YELLOW = "\033[33m";
 const string BOLD = "\033[1m";
 
-// FILE EXTENSION TO CACHE 
+// FILE EXTENSION TO CACHE
 const string extension = ".mp3";
 
 struct SongMetadata {
@@ -59,6 +60,7 @@ string getFileNameFromInode(const string& inode) {
 
     return fileName;
 }
+
 // Function to escape special characters in filename
 string escapeSpecialCharacters(const string& fileName) {
     string escapedFileName;
@@ -70,6 +72,7 @@ string escapeSpecialCharacters(const string& fileName) {
     }
     return escapedFileName;
 }
+
 // Function to store metadata in JSON format
 void storeMetadataJSON(const string& inode, const string& fileName, json& artistsArray, vector<SongMetadata>& songMetadata) {
     // Escape special characters in the filename
@@ -88,7 +91,7 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
     int track = metadata["format"]["tags"].contains("track") ? stoi(metadata["format"]["tags"]["track"].get<string>()) : 0;
     string genre = metadata["format"]["tags"].contains("genre") ? metadata["format"]["tags"]["genre"].get<string>() : "";
     string date = metadata["format"]["tags"].contains("date") ? metadata["format"]["tags"]["date"].get<string>() : "";
-    string lyrics = metadata["format"]["tags"].contains("lyrics-XXX") ? metadata["format"]["tags"]["lyrics-XXX"].get<string>() : ""; 
+    string lyrics = metadata["format"]["tags"].contains("lyrics-XXX") ? metadata["format"]["tags"]["lyrics-XXX"].get<string>() : "";
 
     // Check if artist is already in the array
     if (find(artistsArray.begin(), artistsArray.end(), artist) == artistsArray.end()) {
@@ -98,6 +101,7 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
     // Store metadata
     songMetadata.push_back({fileName, inode, artist, album, title, disc, track, genre, date, lyrics});
 }
+
 // Function to save artists to a file
 void saveArtistsToFile(const json& artistsArray, const string& filePath) {
     ofstream outFile(filePath, ios::trunc);
@@ -109,6 +113,15 @@ void saveArtistsToFile(const json& artistsArray, const string& filePath) {
     }
 }
 
+void saveSongDirToFile(const std::string& songDirectory) {
+  std::fstream songDirFile(".cache/litemus/songDirectory.txt", std::ios::out);
+  if (!songDirFile) {
+      printErrorAndExit("[ERROR] Unable to save song directory to file: songDirectory.txt");
+  }
+  songDirFile << songDirectory;
+  songDirFile.close();
+}
+
 // Function to print artists
 void printArtists(const json& artistsArray) {
     cout << "Artists List:" << endl;
@@ -116,8 +129,6 @@ void printArtists(const json& artistsArray) {
         cout << " - " << artist << endl;
     }
 }
-
-
 
 void storeSongsJSON(const string& filePath, const vector<SongMetadata>& songMetadata) {
     json songsJson;
@@ -213,7 +224,20 @@ void saveCurrentInodes(const vector<string>& inodes, const string& filePath) {
     }
 }
 
+void drawProgressBar(WINDOW* win, int y, int x, float progress) {
+    int barWidth = 50; // Width of the progress bar
+    int pos = barWidth * progress;
+    mvwprintw(win, y, x, "[");
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) mvwprintw(win, y, x + 1 + i, "=");
+        else mvwprintw(win, y, x + 1 + i, " ");
+    }
+    mvwprintw(win, y, x + 1 + barWidth, "]");
+    wrefresh(win);
+}
+
 int lmus_cache_main(const std::string songDirectory) {
+
     // DIRECTORY VARIABLES
     const string cacheDirectory = songDirectory + ".cache/";
     const string cacheLitemusDirectory = cacheDirectory + "litemus/";
@@ -237,18 +261,65 @@ int lmus_cache_main(const std::string songDirectory) {
     // Load previous inodes from song_cache_info_file if it exists
     vector<string> previousInodes = loadPreviousInodes(songCacheInfoFile);
     json artistsArray;
-    
+
     // Compare current inodes with previous inodes
     if (compareInodeVectors(inodes, previousInodes)) {
         cout << PINK << BOLD << "[CACHE] No changes in song files. Exiting without caching." << RESET << endl;
     } else {
         int cachedSongCount = 0;
+        time_t startTime = time(nullptr); // record the start time
+        setlocale(LC_ALL, "");
+        initscr();
+        noecho();
+        cbreak();
+        curs_set(0);
+        
+        // Create windows for TUI
+        int height = 10;
+        int width = 60;
+        int start_y = 1;
+        int start_x = (COLS - width) / 2;
+        WINDOW* progressWin = newwin(height, width, start_y, start_x);
+        box(progressWin, 0, 0);
+        mvwprintw(progressWin, 1, 1, "LiteMus Cache Process");
+        wrefresh(progressWin);
 
-        for (const string& inode : inodes) {
+        int fileWinHeight = 3;
+        int fileWinWidth = 100;
+        int fileWinStartY = start_y + height + 1;
+        int fileWinStartX = start_x - 20;
+        WINDOW* fileWin = newwin(fileWinHeight, fileWinWidth, fileWinStartY, fileWinStartX);
+        box(fileWin, 0, 0);
+        wrefresh(fileWin);
+
+        for (const std::string& inode : inodes) {
             string fileName = getFileNameFromInode(inode);
-            cout << BLUE << "==> " << fileName << RESET << endl;
+            
+            // Clear previous filename and print new filename
+            wclear(fileWin);
+            box(fileWin, 0, 0);
+            mvwprintw(fileWin, 1, 1, "==> %s", fileName.c_str());
+            wrefresh(fileWin);
+
             storeMetadataJSON(inode, fileName, artistsArray, songMetadata);
             cachedSongCount++;
+            time_t currentTime = time(nullptr);
+
+            double elapsedSeconds = difftime(currentTime, startTime);
+            double songsPerSecond = cachedSongCount / elapsedSeconds;
+            double remainingSongs = inodes.size() - cachedSongCount;
+            double estimatedTimeRemaining = remainingSongs / songsPerSecond;
+
+            // format the estimated time remaining
+            int minutes = static_cast<int>(estimatedTimeRemaining) % 3600 / 60;
+            int seconds = static_cast<int>(estimatedTimeRemaining) % 60;
+            char timeRemainingStr[32];
+            sprintf(timeRemainingStr, "Time to cook: %02d:%02d", minutes, seconds);
+            mvwprintw(progressWin, 3, 1, timeRemainingStr);
+
+            float progress = static_cast<float>(cachedSongCount) / inodes.size();
+            mvwprintw(progressWin, 2, 1, "Progress: %0.2f%%", progress*100);
+            drawProgressBar(progressWin, 5, 1, progress);
         }
 
         saveArtistsToFile(artistsArray, artistsFilePath);
@@ -265,6 +336,10 @@ int lmus_cache_main(const std::string songDirectory) {
 
         // Save current inodes for future comparison
         saveCurrentInodes(inodes, songCacheInfoFile);
+        saveSongDirToFile(songDirectory);
+
+        endwin();
+
 
         cout << endl << GREEN << BOLD << "[SUCCESS] Total of " << cachedSongCount << " songs have been cached!!" << endl;
         cout << PINK << BOLD << "[CACHE] Songs' cache has been stored in " << cacheInfoDirectory << RESET << endl;

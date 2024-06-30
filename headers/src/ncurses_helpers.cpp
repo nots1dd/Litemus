@@ -64,11 +64,12 @@ void displayHelpWindow(WINDOW* menu_win) {
     mvwprintw(menu_win, 13, 2, "b - Previous Song");
     mvwprintw(menu_win, 14, 2, "9 - Increase Volume");
     mvwprintw(menu_win, 15, 2, "0 - Decrease Volume");
-    mvwprintw(menu_win, 16, 2, "/ - String search in focused window");
-    mvwprintw(menu_win, 17, 2, "Tab - Toggle Focused Window");
-    mvwprintw(menu_win, 19, 2, "2 - To show help menu");
+    mvwprintw(menu_win, 16, 2, "m - Mute all Volume");
+    mvwprintw(menu_win, 17, 2, "/ - String search in focused window");
+    mvwprintw(menu_win, 18, 2, "Tab - Toggle Focused Window");
+    mvwprintw(menu_win, 20, 2, "2 - To show help menu");
 init_pair(GREY_BACKGROUND_COLOR, COLOR_BLACK, COLOR_WHITE);  // Grey background and black text for title
-    mvwprintw(menu_win, 21, 2, "Press '1' to go back to the menu");
+    mvwprintw(menu_win, 22, 2, "Press '1' to go back to the menu");
     wrefresh(menu_win);
 }
 
@@ -132,7 +133,7 @@ bool showExitConfirmation(WINDOW* parent_win) {
     int start_x = (COLS - width) / 2;
 
     WINDOW* confirm_win = newwin(height, width, start_y, start_x);
-    wattron(confirm_win, COLOR_PAIR(COLOR_GREEN));
+    wattron(confirm_win, COLOR_PAIR(COLOR_RED));
     box(confirm_win, 0, 0);
     mvwprintw(confirm_win, 1, 9, "Do you really want to exit LITEMUS?");
     mvwprintw(confirm_win, 4, 8, "     Yes (Y)               No (N)");
@@ -141,10 +142,10 @@ bool showExitConfirmation(WINDOW* parent_win) {
 
     int ch;
     bool exitConfirmed = false;
-    while ((ch = wgetch(confirm_win)) != 'y' && ch != 'Y' && ch != 'n' && ch != 'N' && ch != 27 && ch != 10) {
+    while ((ch = wgetch(confirm_win)) != 'y' && ch != 'Y' && ch != 'n' && ch != 'N' && ch != 27 && ch != 10 && ch != 'q' && ch != 'Q') {
         // Wait for valid input
     }
-    if (ch == 'y' || ch == 'Y' || ch == 10) {
+    if (ch == 'y' || ch == 'Y' || ch == 10 || ch == 'q' || ch == 'Q') {
         exitConfirmed = true;
     }
 
@@ -154,11 +155,11 @@ bool showExitConfirmation(WINDOW* parent_win) {
     return exitConfirmed;
 }
 
-void printMultiLine(WINDOW* win, const std::vector<std::string>& lines, int start_line) {
+void printMultiLine(WINDOW* win, const std::vector<std::string>& lines, int start_line, std::string& currentSong, std::string& currentArtist) {
     int max_y, max_x;
     getmaxyx(win, max_y, max_x);
-
-    for (int i = 1; i < max_y && (start_line + i) < lines.size(); ++i) {
+    mvwprintw(win, 1, 2, " %s by %s", currentSong.c_str(), currentArtist.c_str());
+    for (int i = 3; i < max_y && (start_line + i) < lines.size(); ++i) {
         mvwprintw(win, i, 0, "%s", lines[start_line + i].c_str());
     }
 }
