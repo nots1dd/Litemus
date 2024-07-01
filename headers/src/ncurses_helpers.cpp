@@ -50,12 +50,12 @@ void displayHelpWindow(WINDOW* menu_win) {
     // set_menu_fore(menu_win, A_NORMAL);
     box(menu_win, 0, 0);
     mvwprintw(menu_win, 0, 2, " HELP WIN: ");
-    mvwprintw(menu_win, 2, 2, "p - Pause/Play");
+    mvwprintw(menu_win, 2, 2, "p - Toggle playback");
     mvwprintw(menu_win, 3, 2, "Enter - Play selected song");
-    mvwprintw(menu_win, 4, 2, "Right Arrow - Seek forward 5 seconds");
-    mvwprintw(menu_win, 5, 2, "Left Arrow - Seek backward 5 seconds");
-    mvwprintw(menu_win, 6, 2, "f - Seek forward 60 seconds");
-    mvwprintw(menu_win, 7, 2, "g - Seek backward 60 seconds");
+    mvwprintw(menu_win, 4, 2, "Right Arrow - Seek forward 5s");
+    mvwprintw(menu_win, 5, 2, "Left Arrow - Seek backward 5s");
+    mvwprintw(menu_win, 6, 2, "f - Seek forward 60s");
+    mvwprintw(menu_win, 7, 2, "g - Seek backward 60s");
     mvwprintw(menu_win, 8, 2, "r - Replay current song");
     mvwprintw(menu_win, 9, 2, "j - Move up");
     mvwprintw(menu_win, 10, 2, "k - Move down");
@@ -64,7 +64,7 @@ void displayHelpWindow(WINDOW* menu_win) {
     mvwprintw(menu_win, 13, 2, "b - Previous Song");
     mvwprintw(menu_win, 14, 2, "9 - Increase Volume");
     mvwprintw(menu_win, 15, 2, "0 - Decrease Volume");
-    mvwprintw(menu_win, 16, 2, "m - Mute all Volume");
+    mvwprintw(menu_win, 16, 2, "m - Toggle mute");
     mvwprintw(menu_win, 17, 2, "/ - String search in focused window");
     mvwprintw(menu_win, 18, 2, "Tab - Toggle Focused Window");
     mvwprintw(menu_win, 20, 2, "2 - To show help menu");
@@ -114,17 +114,18 @@ void updateStatusBar(WINDOW* status_win, const std::string& songName, const std:
 
 void highlightFocusedWindow(MENU* menu, bool focused) {
     if (focused) {
-        set_menu_fore(menu, COLOR_PAIR(LIGHT_GREEN_COLOR));
-        set_menu_back(menu, COLOR_PAIR(A_NORMAL));
+        set_menu_fore(menu, COLOR_PAIR(COLOR_RED) | A_REVERSE);  // Highlight the item with a light green color
+        set_menu_back(menu, COLOR_PAIR(A_NORMAL));          // Set the menu background to grey
         wattron(menu_win(menu), COLOR_PAIR(LIGHT_GREEN_COLOR));
         box(menu_win(menu), 0, 0);
     } else {
         set_menu_fore(menu, A_NORMAL);
         set_menu_back(menu, A_NORMAL);
-        wattroff(menu_win(menu), COLOR_PAIR(LIGHT_GREEN_COLOR));
+        wattroff(menu_win(menu), COLOR_PAIR(GREY_BACKGROUND_COLOR));
     }
     wrefresh(menu_win(menu));
 }
+
 
 bool showExitConfirmation(WINDOW* parent_win) {
     int height = 7;
@@ -160,7 +161,7 @@ void printMultiLine(WINDOW* win, const std::vector<std::string>& lines, int star
     getmaxyx(win, max_y, max_x);
     mvwprintw(win, 1, 2, " %s by %s", currentSong.c_str(), currentArtist.c_str());
     for (int i = 3; i < max_y && (start_line + i) < lines.size(); ++i) {
-        mvwprintw(win, i, 0, "%s", lines[start_line + i].c_str());
+        mvwprintw(win, i, 0, " %s", lines[start_line + i - 2].c_str());
     }
 }
 

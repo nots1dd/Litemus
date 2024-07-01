@@ -1,0 +1,15 @@
+Change type: MAJOR
+
+Summary
+
+-> Changed the destination of cache files from songsDirectory to homeDirectory (previously it would be stored in Downloads/Songs/.cache/litemus/ for example, now its just ~/.cache/litemus/)
+
+-> Converted and refactored the code to have and parse non static directories
+
+-> Changed the scroller or cursor
+
+-> Added a new tui for adding song directory
+
+-> Added new header checkSongDir.hpp
+
+-> Refactoring of code after massive change in all headers and cpp files

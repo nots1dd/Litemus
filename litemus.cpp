@@ -1,9 +1,11 @@
 #include <thread>
 #include <chrono>
+#include <cstdlib>
 #include "headers/lmus_cache.hpp"
 #include "headers/sfml_helpers.hpp"
 #include "headers/ncurses_helpers.hpp"
 #include "headers/parsers.hpp"
+#include "headers/checkSongDir.hpp"
 
 #define COLOR_PAIR_FOCUSED 1 
 #define COLOR_PAIR_SELECTED 3
@@ -11,9 +13,14 @@
 #define LIGHT_GREEN_COLOR 8
 
 // Directory vars
-const std::string songsDirectory = "/home/s1dd/Downloads/Songs/";
-const std::string cacheDirectory = songsDirectory + ".cache/litemus/info/song_names.json";
-const std::string cacheArtistDirectory = songsDirectory + ".cache/litemus/info/artists.json";
+const std::string homeDir = get_home_directory();
+const std::string cacheLitemusDir = homeDir + "/.cache/litemus/";
+const std::string cacheInfoDir = cacheLitemusDir + "info/";
+const std::string songDirCache = cacheLitemusDir + "songDirectory.txt";
+const std::string cacheDirectory = cacheInfoDir + "song_names.json";
+const std::string cacheInfoFile = cacheInfoDir + "song_cache_info.json";
+const std::string cacheArtistDirectory = cacheInfoDir + "artists.json";
+
 
 const char* title_content = "  LITEMUS - Light Music player                                                                                                                                                                               ";
 int menu_height = 44;
@@ -32,14 +39,27 @@ void quitFunc(sf::Music& music, std::vector<std::string>& allArtists, std::vecto
   free_menu(artistMenu); 
 }
 
+std::string read_file_to_string(const std::string& path) {
+    std::ifstream file(path);
+    std::stringstream buffer;
+    if (file.is_open()) {
+        buffer << file.rdbuf();
+        file.close();
+    }
+    return buffer.str();
+}
+
 int main() {
     // Initialize ncurses
-    lmus_cache_main(songsDirectory);
+    songDirMain(songDirCache, cacheLitemusDir);
+    std::string songsDirectory = read_file_to_string(songDirCache);
+    // std::cout << songsDirectory << endl;
+    lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache);     
     ncursesSetup();
 
     // Cache directory and song information 
     std::vector<std::string> allArtists = parseArtists(cacheArtistDirectory);
-    auto [songTitles, songPaths] = listSongs(cacheDirectory, allArtists[0]); // default to the first artist
+    auto [songTitles, songPaths] = listSongs(cacheDirectory, allArtists[0], songsDirectory); // default to the first artist
  
 
     // Check if songs are found
@@ -242,7 +262,7 @@ int main() {
                     const char* selectedArtist = allArtists[artselectedIndex].c_str();
 
                     // Update song menu with songs of the selected artist
-                        auto [newSongTitles, newSongPaths] = listSongs(cacheDirectory, selectedArtist);
+                        auto [newSongTitles, newSongPaths] = listSongs(cacheDirectory, selectedArtist, songsDirectory);
                         for (size_t i = 0; i < songTitles.size(); ++i) {
                             free_item(songItems[i]);
                         }
@@ -354,7 +374,7 @@ int main() {
                       int x,y;
                       getmaxyx(stdscr, y, x); // get the screen dimensions
                       int warning_width = 75; // adjust this to your liking
-                      int warning_height = 7;
+                      int warning_height = 15;
                       int warning_x = x / 2; // center the input field
                       int warning_y = y / 2; // center the input field
                       std::vector<std::string> lines = splitStringByNewlines(currentLyrics);
@@ -363,7 +383,12 @@ int main() {
                       box(warning_win, 0, 0); // add a border around the input field
                       mvwprintw(warning_win, 0, 2, " Warning: ");
                       mvwprintw(warning_win, 1, 2, " You are in Lyrics view (&&), press 1 to exit! "); // prompt the user
-                      mvwprintw(warning_win, 3, 2, " NO KEYBINDS EXCEPT KEY_UP, KEY_DOWN and play/pause WILL WORK!!");
+                      mvwprintw(warning_win, 3, 2, " ONLY THE FOLLOWING KEYBINDS WORK in LYRICS VIEW:");
+                      mvwprintw(warning_win, 5, 2, "1. Up Arrow/j - scroll up");
+                      mvwprintw(warning_win, 6, 2, "2. Down Arrow/k - scroll down");
+                      mvwprintw(warning_win, 7, 2, "3. p - Toggle playback");
+                      mvwprintw(warning_win, 8, 2, "4. 9 - Increase vol");
+                      mvwprintw(warning_win, 9, 2, "5. 0 - Decrease vol");
                       wrefresh(warning_win);
                       
                       WINDOW* lyrics_win = derwin(artist_menu_win, menu_height - 2, menu_width - 2, 1, 1);
@@ -380,11 +405,13 @@ int main() {
                       while ((ch = getch()) != '1') { // Press '1' to exit
                           switch (ch) {
                               case KEY_UP:
+                              case 'j':
                                   if (start_line > 0) {
                                       start_line--;
                                   }
                                   break;
                               case KEY_DOWN:
+                              case 'k':
                                   if (start_line + menu_height - 2 < lines.size()) {
                                       start_line++;
                                   }
@@ -407,8 +434,8 @@ int main() {
                           werase(lyrics_win); // Clear the sub-window
                           printMultiLine(lyrics_win, lines, start_line, currentSong, currentArtist);
                           showingLyrics = true;
+                          box(song_menu_win, 0, 0);
                           post_menu(songMenu);
-                          wrefresh(song_menu_win);
                           updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
                           wrefresh(lyrics_win);
                           

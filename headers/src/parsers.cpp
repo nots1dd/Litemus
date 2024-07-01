@@ -1,7 +1,16 @@
 #include "../parsers.hpp"
 
 using json = nlohmann::json;
-extern const std::string songsDirectory = "/home/s1dd/Downloads/Songs/";
+
+std::string get_home_directory() {
+    const char* homeDir = getenv("HOME");
+    if (homeDir == nullptr) {
+        // Handle error or fallback
+        return "";
+    } else {
+        return std::string(homeDir);
+    }
+}
 
 std::vector<std::string> parseArtists(const std::string& artistsFile) {
     std::ifstream file(artistsFile);
@@ -26,7 +35,7 @@ std::vector<std::string> parseArtists(const std::string& artistsFile) {
     return artists;
 }
 
-std::pair<std::vector<std::string>, std::vector<std::string>> listSongs(const std::string& cacheFile, const std::string& artistName) {
+std::pair<std::vector<std::string>, std::vector<std::string>> listSongs(const std::string& cacheFile, const std::string& artistName, const std::string& songsDirectory) {
     std::ifstream file(cacheFile);
     if (!file.is_open()) {
         std::cerr << "Could not open cache file: " << cacheFile << std::endl;

@@ -8,7 +8,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Add the executable
-add_executable(Litemus litemus.cpp headers/src/executeCmd.cpp headers/src/lmus_cache.cpp headers/src/sfml_helpers.cpp headers/src/ncurses_helpers.cpp headers/src/parsers.cpp)
+add_executable(
+  Litemus 
+  litemus.cpp 
+  headers/src/executeCmd.cpp 
+  headers/src/lmus_cache.cpp 
+  headers/src/sfml_helpers.cpp 
+  headers/src/ncurses_helpers.cpp 
+  headers/src/parsers.cpp
+  headers/src/checkSongDir.cpp
+)
 
 # Find and include SFML
 find_package(SFML 2.5 COMPONENTS audio REQUIRED)

@@ -113,8 +113,8 @@ void saveArtistsToFile(const json& artistsArray, const string& filePath) {
     }
 }
 
-void saveSongDirToFile(const std::string& songDirectory) {
-  std::fstream songDirFile(".cache/litemus/songDirectory.txt", std::ios::out);
+void saveSongDirToFile(const std::string& songDirPath, const string& songDirectory) {
+  std::fstream songDirFile(songDirPath, std::ios::out);
   if (!songDirFile) {
       printErrorAndExit("[ERROR] Unable to save song directory to file: songDirectory.txt");
   }
@@ -236,14 +236,10 @@ void drawProgressBar(WINDOW* win, int y, int x, float progress) {
     wrefresh(win);
 }
 
-int lmus_cache_main(const std::string songDirectory) {
+int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const std::string cacheLitemusDirectory, const std::string cacheInfoDirectory, const std::string songCacheInfoFile, const std::string artistsFilePath, const std::string songDirPathCache) {
 
     // DIRECTORY VARIABLES
-    const string cacheDirectory = songDirectory + ".cache/";
-    const string cacheLitemusDirectory = cacheDirectory + "litemus/";
-    const string cacheInfoDirectory = cacheLitemusDirectory + "info/";
-    const string artistsFilePath = cacheInfoDirectory + "artists.json";
-    const string songCacheInfoFile = cacheInfoDirectory + "song_cache_info.json";
+    const string cacheDirectory = homeDir + "/.cache/"; 
 
     changeDirectory(songDirectory);
     createDirectory(cacheDirectory);
@@ -336,7 +332,7 @@ int lmus_cache_main(const std::string songDirectory) {
 
         // Save current inodes for future comparison
         saveCurrentInodes(inodes, songCacheInfoFile);
-        saveSongDirToFile(songDirectory);
+        saveSongDirToFile(songDirPathCache, songDirectory);
 
         endwin();
 
