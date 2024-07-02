@@ -290,11 +290,11 @@ int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const
 
         for (const std::string& inode : inodes) {
             string fileName = getFileNameFromInode(inode);
-            
+            string finalFileName = fileName.length() > 75 ? fileName.substr(0, 75) + "..." : fileName;
             // Clear previous filename and print new filename
             wclear(fileWin);
             box(fileWin, 0, 0);
-            mvwprintw(fileWin, 1, 1, "==> %s", fileName.c_str());
+            mvwprintw(fileWin, 1, 1, "==> %s", finalFileName.c_str());
             wrefresh(fileWin);
 
             storeMetadataJSON(inode, fileName, artistsArray, songMetadata);

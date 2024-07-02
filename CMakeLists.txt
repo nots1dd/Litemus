@@ -17,6 +17,7 @@ add_executable(
   headers/src/ncurses_helpers.cpp 
   headers/src/parsers.cpp
   headers/src/checkSongDir.cpp
+  headers/src/keyHandlers.cpp
 )
 
 # Find and include SFML

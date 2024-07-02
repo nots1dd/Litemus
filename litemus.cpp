@@ -1,11 +1,11 @@
 #include <thread>
 #include <chrono>
-#include <cstdlib>
 #include "headers/lmus_cache.hpp"
 #include "headers/sfml_helpers.hpp"
 #include "headers/ncurses_helpers.hpp"
 #include "headers/parsers.hpp"
 #include "headers/checkSongDir.hpp"
+#include "headers/keyHandlers.hpp"
 
 #define COLOR_PAIR_FOCUSED 1 
 #define COLOR_PAIR_SELECTED 3
@@ -25,6 +25,8 @@ const std::string cacheArtistDirectory = cacheInfoDir + "artists.json";
 const char* title_content = "  LITEMUS - Light Music player                                                                                                                                                                               ";
 int menu_height = 44;
 int menu_width = 90;
+int title_height = 2; 
+int title_width = 208;
 
 void quitFunc(sf::Music& music, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles, ITEM** artistItems, ITEM** songItems, MENU* artistMenu, MENU* songMenu) {
   music.stop();
@@ -39,21 +41,10 @@ void quitFunc(sf::Music& music, std::vector<std::string>& allArtists, std::vecto
   free_menu(artistMenu); 
 }
 
-std::string read_file_to_string(const std::string& path) {
-    std::ifstream file(path);
-    std::stringstream buffer;
-    if (file.is_open()) {
-        buffer << file.rdbuf();
-        file.close();
-    }
-    return buffer.str();
-}
-
 int main() {
     // Initialize ncurses
     songDirMain(songDirCache, cacheLitemusDir);
     std::string songsDirectory = read_file_to_string(songDirCache);
-    // std::cout << songsDirectory << endl;
     lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache);     
     ncursesSetup();
 
@@ -79,8 +70,7 @@ int main() {
     MENU* songMenu = new_menu(songItems);
 
     // Window dimensions and initialization
-    int title_height = 2; 
-    int title_width = 206; 
+   /*  initWinSetup(artistMenu, songMenu); */
 
     WINDOW* title_win = newwin(title_height, title_width, 0, 0);
     wbkgd(title_win, COLOR_PAIR(GREY_BACKGROUND_COLOR));
@@ -89,7 +79,7 @@ int main() {
 
     WINDOW* artist_menu_win = newwin(menu_height, menu_width, 1, 0);
     WINDOW* song_menu_win = newwin(menu_height, menu_width + 29, 1, menu_width);
-    WINDOW* status_win = newwin(10, 230, LINES - 2, 0);
+    WINDOW* status_win = newwin(10, 300, LINES - 2, 0);
 
     // Set menus to their respective windows
     ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width); 
@@ -113,6 +103,7 @@ int main() {
 
     // Timeout for getch() to avoid blocking indefinitely
     timeout(1);
+    nodelay(artist_menu_win, TRUE);
 
     // Flag to track first enter press
     bool firstEnterPressed = false;
@@ -127,38 +118,11 @@ int main() {
         if (ch != ERR) {
             switch (ch) {
                 case '1':
-                  werase(artist_menu_win);
-                  ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width);
-                  post_menu(artistMenu);
-                  post_menu(songMenu);
-                  box(artist_menu_win, 0, 0);
-                  highlightFocusedWindow(artistMenu, showingArtists);
-                  wrefresh(artist_menu_win);
+                  handleKeyEvent_1(artistMenu, songMenu, artist_menu_win, showingArtists, menu_height, menu_width); 
                   break;
                 case 9:  // Tab to switch between menus
                     showingArtists = !showingArtists;
-                    if (showingArtists) {
-                        // Switch focus to artist menu
-                        werase(artist_menu_win);
-                        ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width);
-                        post_menu(artistMenu);
-                        post_menu(songMenu);
-                        box(artist_menu_win, 0, 0);
-                        highlightFocusedWindow(artistMenu, true);
-                        highlightFocusedWindow(songMenu, false);
-                        wrefresh(artist_menu_win);
-                    } else {
-                        // Switch focus to song menu
-                        ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width);
-                        post_menu(songMenu);
-                        post_menu(artistMenu);
-                        box(song_menu_win, 0, 0);
-                        set_menu_format(songMenu, menu_height, 0);
-                        highlightFocusedWindow(artistMenu, false);
-                        highlightFocusedWindow(songMenu, true);
-                        wrefresh(song_menu_win);
-                    }
-                    // switchWinFocus(showingArtists, artist_menu_win, song_menu_win, artistMenu, songMenu);
+                    handleKeyEvent_tab(artistMenu, songMenu, artist_menu_win, song_menu_win, showingArtists, menu_height, menu_width); 
                     break;
                 case KEY_DOWN:
                 case 'k':
@@ -169,88 +133,14 @@ int main() {
                     move_menu_up(artistMenu, songMenu, showingArtists);
                     break;
                 case KEY_RIGHT:
-                  music.setPlayingOffset(music.getPlayingOffset() + sf::seconds(5));
+                  seekSong(music, 5, 1); // 1 is bool for true ->it will forward
                   break;
                 case KEY_LEFT:
-                    if (music.getPlayingOffset() > sf::seconds(5)) {
-                          music.setPlayingOffset(music.getPlayingOffset() - sf::seconds(5));
-                    } else {
-                          music.setPlayingOffset(sf::seconds(0));
-                    }
+                    seekSong(music, 5, 0);
                     break;
-                case '/': // or case CTRL_F: for Ctrl+F
-                  {
-                      char search_str[256];
-                      int x, y;
-                      getmaxyx(stdscr, y, x); // get the screen dimensions
-                      int input_width = 40; // adjust this to your liking
-                      int input_height = 3;
-                      int input_x = x / 3; // center the input field
-                      int input_y = y / 2; // center the input field
-
-                      // create a window for the input field
-                      WINDOW *input_win = newwin(input_height, input_width, input_y, input_x);
-                      wattron(input_win, COLOR_PAIR(COLOR_RED));
-                      box(input_win, 0, 0); // add a border around the input field
-                      mvwprintw(input_win, 0, 2, " Search: "); // prompt the user
-                      wrefresh(input_win); // refresh the input window
-
-                      // get the user input
-                      int i = 0;
-                      int count = 0;
-
-                      while (true) {
-                          int c = wgetch(input_win);
-                          if (c == '\n') {
-                              break;
-                          } else if (c == KEY_BACKSPACE || c == 127) { // backspace
-                              if (i > 0) {
-                                  search_str[--i] = '\0'; // remove the last character from the array
-                                  mvwprintw(input_win, 1, 1, "%*s", input_width - 25, " "); // erase the last character
-                                  mvwprintw(input_win, 1, 1, "%*s", input_width - 25, search_str); // reprint the input string
-                                  wrefresh(input_win);
-                                  count--;
-                              }
-                          } else if (c == 27) { // escape
-                              break;
-                          } else if (isprint(c) && count <= 10) { // only add printable characters to the input string
-                              search_str[i++] = c;
-                              search_str[i] = '\0'; // null-terminate the string
-                              mvwprintw(input_win, 1, 1, "%*s", input_width - 25, search_str); // print the input string
-                              wrefresh(input_win);
-                              count++;
-                          }
-                          if (i >= 255) {
-                              break;
-                          }
-                      }
-                      search_str[i] = '\0'; // null-terminate the string
-                      // destroy the input window
-                      delwin(input_win);
-
-                      if (showingArtists) {
-                          ITEM **items = menu_items(artistMenu);
-                          int i;
-                          for (i = 0; i < item_count(artistMenu); i++) {
-                              const char *itemName = item_name(items[i]);
-                              if (strcasestr(itemName, search_str) != NULL) {
-                                  set_current_item(artistMenu, items[i]);
-                                  break;
-                              }
-                          }
-                      } else {
-                          ITEM **items = menu_items(songMenu);
-                          int i;
-                          for (i = 0; i < item_count(songMenu); i++) {
-                              const char *itemName = item_name(items[i]);
-                              if (strcasestr(itemName, search_str) != NULL) {
-                                  set_current_item(songMenu, items[i]);
-                                  break;
-                              }
-                          }
-                      }
-                      break;
-                  }
+                case '/': // string search 
+                  handleKeyEvent_slash(artistMenu, songMenu, showingArtists);
+                  break;   
               case 10:  // Enter key
                 if (showingArtists) {
                     // Show details of selected artist (if needed)
@@ -316,14 +206,10 @@ int main() {
                           }
                           break;
                       case 'f':  // Fast-forward (skip 5 seconds)
-                          music.setPlayingOffset(music.getPlayingOffset() + sf::seconds(60));
+                          seekSong(music, 60, 1);
                           break;
                       case 'g':  // Rewind (go back 5 seconds)
-                          if (music.getPlayingOffset() > sf::seconds(60)) {
-                              music.setPlayingOffset(music.getPlayingOffset() - sf::seconds(60));
-                          } else {
-                              music.setPlayingOffset(sf::seconds(0));
-                          }
+                          seekSong(music, 60 , 0);
                           break;
                       case 'r':  // Restart current song
                           music.stop();
@@ -359,12 +245,12 @@ int main() {
                         currentSong = songTitles[currentSongIndex];
                         auto resultGA = findCurrentGenreArtist(cacheDirectory, currentSong, currentLyrics);
                         currentGenre = resultGA.first;
-                      currentArtist = resultGA.second;
-                      updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
+                        currentArtist = resultGA.second;
+                        updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
                     }
                     break;
                 case '2':  // Display help window
-                    displayHelpWindow(artist_menu_win);
+                    displayWindow(artist_menu_win, "help");
                     break;
                 case '3':
                     if (currentLyrics != "") {
@@ -379,20 +265,10 @@ int main() {
                       int warning_y = y / 2; // center the input field
                       std::vector<std::string> lines = splitStringByNewlines(currentLyrics);
                       WINDOW *warning_win = newwin(warning_height, warning_width, warning_y, warning_x);
-                      wattron(warning_win, COLOR_PAIR(COLOR_RED));
-                      box(warning_win, 0, 0); // add a border around the input field
-                      mvwprintw(warning_win, 0, 2, " Warning: ");
-                      mvwprintw(warning_win, 1, 2, " You are in Lyrics view (&&), press 1 to exit! "); // prompt the user
-                      mvwprintw(warning_win, 3, 2, " ONLY THE FOLLOWING KEYBINDS WORK in LYRICS VIEW:");
-                      mvwprintw(warning_win, 5, 2, "1. Up Arrow/j - scroll up");
-                      mvwprintw(warning_win, 6, 2, "2. Down Arrow/k - scroll down");
-                      mvwprintw(warning_win, 7, 2, "3. p - Toggle playback");
-                      mvwprintw(warning_win, 8, 2, "4. 9 - Increase vol");
-                      mvwprintw(warning_win, 9, 2, "5. 0 - Decrease vol");
-                      wrefresh(warning_win);
+                      displayWindow(warning_win, "warning");
                       
                       WINDOW* lyrics_win = derwin(artist_menu_win, menu_height - 2, menu_width - 2, 1, 1);
-                      wattron(lyrics_win, COLOR_PAIR(COLOR_BLUE));
+                      // wattron(lyrics_win, COLOR_PAIR(GREY_BACKGROUND_COLOR);
                       mvwprintw(artist_menu_win, 0, 2, " Lyrics: ");
 
                       int start_line = 0; // To keep track of the starting line for scrolling
@@ -438,6 +314,10 @@ int main() {
                           post_menu(songMenu);
                           updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
                           wrefresh(lyrics_win);
+                          mvwprintw(song_menu_win, 0, 2, " Songs: ");
+                          wrefresh(song_menu_win);
+                          displayWindow(warning_win, "warning");
+                          std::this_thread::sleep_for(std::chrono::milliseconds(20));
                           
                       }
 
@@ -456,7 +336,8 @@ int main() {
                     werase(artist_menu_win);
                     ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width);
                     set_menu_format(artistMenu, menu_height, 0);
-                    post_menu(artistMenu); 
+                    post_menu(artistMenu);
+                    highlightFocusedWindow(artistMenu, showingArtists);
                     showingLyrics = false;
                     break;
                 case 'q':  // Quit

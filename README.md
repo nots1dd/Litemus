@@ -16,9 +16,9 @@ A fast and interactive music player built with SFML, ncurses, and nlohmann json 
 
 * SFML for the audio API for smooth audio quality and features
 
-### Basic Song Controls
+### Song Controls
 
-* Basic song controls are implemented (play, pause, seek forward/backward, next song, prev song)
+* Pretty much all basic and advanced song controls are implemented with the exception queues
 
 ## Demo
 
@@ -42,17 +42,19 @@ This has only been tried and tested on Arch Linux 6.9 kernel (x86-64)
 
 This will generate a `./build/Litemus` executable. Run it to get the Litemus experience!
 
-> **Important Note**:
-> 
-> Change the `songsDirectory` variable in `litemus.cpp` in order for the project to work for you.
-> 
-> A fix for this is coming very soon.
-
 ## Installation
 
 There is currently no means of installing this on any Linux distro other than building it from source.
 
 If you encounter any issues with building Litemus from this repository in any distro, feel free to create an issue.
+
+> **Tip:**
+> 
+> It is advised that you run Litemus in a full window at all times 
+> 
+> This application still lacks dynamic windowing
+> 
+> BEST RESULTS are seen on: 1920x1080 screen size 
 
 ## Future
 
@@ -61,3 +63,7 @@ If you encounter any issues with building Litemus from this repository in any di
 - [ ] Make the code more modular and easy to read, modify
 - [ ] Add other audio formats (.wav, .flac)
 - [ ] Have custom keybinds
+
+## LICENSE
+
+This project is licensed under `GNU GPL v3`

@@ -1,0 +1,15 @@
+Change type: MEDIUM
+
+Summary
+
+-> More refactor of code (added keyHandlers.hpp for more modular code for key handling and debugging)
+
+-> Hotfix for scrolling down the menu
+
+-> Added dynamic padding to status bar (it is now always a constant length)
+
+-> Fixed some highlighting window issues
+
+-> Fixed some unexpected flickering issues in lyrics view
+
+-> Added a PKGBUILD file for this project

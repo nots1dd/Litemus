@@ -11,5 +11,6 @@ void nextSong(sf::Music& music, const std::vector<std::string>& songs, int& curr
 void previousSong(sf::Music& music, const std::vector<std::string>& songs, int& currentSongIndex);
 void adjustVolume(sf::Music& music, float volumeChange);
 char* strdup(const char* s);
+void seekSong(sf::Music& music, int seekVal, bool forward);
 
 #endif

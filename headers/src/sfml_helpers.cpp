@@ -39,3 +39,15 @@ char* strdup(const char* s) {
     return dup;
 }
 
+void seekSong(sf::Music& music, int seekVal, bool forward) {
+  if (forward) {
+    music.setPlayingOffset(music.getPlayingOffset() + sf::seconds(seekVal));
+  } else {
+    if (music.getPlayingOffset() > sf::seconds(seekVal)) {
+          music.setPlayingOffset(music.getPlayingOffset() - sf::seconds(seekVal));
+    } else {
+          music.setPlayingOffset(sf::seconds(0));
+    }
+  }
+}
+

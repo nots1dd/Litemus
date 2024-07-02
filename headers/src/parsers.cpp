@@ -130,3 +130,12 @@ std::vector<std::string> splitStringByNewlines(const std::string& str) {
     return lines;
 }
 
+std::string read_file_to_string(const std::string& path) {
+    std::ifstream file(path);
+    std::stringstream buffer;
+    if (file.is_open()) {
+        buffer << file.rdbuf();
+        file.close();
+    }
+    return buffer.str();
+}
