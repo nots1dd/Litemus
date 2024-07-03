@@ -26,8 +26,9 @@ A fast and interactive music player built with SFML, ncurses, and nlohmann json 
 
 [![Demo Video](https://github.com/nots1dd/Litemus/assets/140317709/cce9fc82-14f5-4983-bfa8-a5b714d20910)](https://github.com/nots1dd/Litemus/assets/140317709/cce9fc82-14f5-4983-bfa8-a5b714d20910)
 
-![litemusreadme1](https://github.com/nots1dd/Litemus/assets/140317709/c270df7d-af84-4cf9-a0b7-b475f27a2081)
-![litemusreadme2](https://github.com/nots1dd/Litemus/assets/140317709/56a5010b-d71e-4a4a-ac27-0ec880970052)
+![lmusPic1](https://github.com/nots1dd/Litemus/assets/140317709/736e6e8f-af47-4102-9365-187c7ac0f176)
+![lmusPic2](https://github.com/nots1dd/Litemus/assets/140317709/a87f3118-ec39-470f-8cd6-06287a4a37dc)
+
 
 ## Pre-Requisites
 
