@@ -18,7 +18,6 @@ void draw_form_window(WINDOW *win);
 void draw_error_window(WINDOW *win);
 void draw_error_message(WINDOW *win, const char *message);
 void cleanup(WINDOW *win, const char *song_directory, const std::string& songDirPath);
-bool directory_exists(const char *dir_path);
 bool has_mp3_files(const char *dir_path);
 int songDirMain(const std::string& songDirPath, const std::string& cacheLitemusDir);
 

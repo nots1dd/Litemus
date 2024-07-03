@@ -1,4 +1,5 @@
 #include "../ncurses_helpers.hpp"
+#include "../parsers.hpp"
 
 #define GREY_BACKGROUND_COLOR 7
 #define LIGHT_GREEN_COLOR 8
@@ -134,7 +135,7 @@ void updateStatusBar(WINDOW* status_win, const std::string& songName, const std:
     const std::string overallSongName = songName + " by " + artistName;
     const std::string launchName = "Unknown Song";
 
-    std::string displayName = overallSongName.length() > remainingWidth ? overallSongName.substr(0, remainingWidth - 3) + "..." : overallSongName;
+    std::string displayName = overallSongName.length() > 50 ? overallSongName.substr(0, 47) + "..." : overallSongName;
 
     wmove(status_win, 1, 1);
     wclrtoeol(status_win);
@@ -340,4 +341,3 @@ ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists
     return songItems;
   }
 }
-

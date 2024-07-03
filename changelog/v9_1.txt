@@ -1,0 +1,7 @@
+Change Type: MEDIUM
+
+Summary
+
+-> Enabled dynamic songMenu update while scrolling through artistMenu and string search
+
+-> Slight refactor of code

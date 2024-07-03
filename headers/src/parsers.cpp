@@ -2,13 +2,6 @@
 
 using json = nlohmann::json;
 
-char* strdup(const char* s) {
-    size_t len = strlen(s);
-    char* dup = new char[len + 1];
-    strcpy(dup, s);
-    return dup;
-}
-
 std::string get_home_directory() {
     const char* homeDir = getenv("HOME");
     if (homeDir == nullptr) {

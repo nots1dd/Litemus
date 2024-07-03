@@ -1,6 +1,6 @@
 # LiteMus - Light Music Player
 
-A fast and interactive music player built with SFML, ncurses, and nlohmann json libraries in C++.
+A fast and interactive console music player written in C++ for UNIX Systems.
 
 ## Features
 
@@ -32,11 +32,11 @@ A fast and interactive music player built with SFML, ncurses, and nlohmann json 
 
 ## Pre-Requisites
 
--> A UNIX filesystem (x86_64 arch)
+-> A UNIX based filesystem (x86_64 arch)
 
--> A directory with `mp3` files which have proper embedded metadata (random mp3 files will not work and may lead to some unexepcted results)
+-> A directory with `mp3` files which have proper *embedded metadata* (random mp3 files will not work and may lead to some unexepcted results)
 
--> Dependencies: `cmake`, `ncurses`, `sfml`, `nlohmann-json` (for building this project)
+-> Dependencies: `cmake`, `ncurses`, `sfml`, `nlohmann-json` and `ffmpeg` (for building this project)
 
 ## Build
 
@@ -47,7 +47,7 @@ This has only been tried and tested on Arch Linux 6.9 kernel (x86-64)
 ### Steps:
 
 1. Clone this repository: `https://github.com/nots1dd/Litemus.git`
-2. Install the required C++ libraries: `ncurses`, `SFML`, `nlohmann-json`
+2. Install the required C++ libraries: `ncurses`, `SFML`, `nlohmann-json` (and `ffmpeg in your system`)
 3. Run `cmake -S . -B build/`
 4. Run `cmake --build build/`
 

@@ -31,6 +31,13 @@ int menu_width = 90;
 int title_height = 2; 
 int title_width = 208;
 
+char* strdup(const char* s) {
+    size_t len = strlen(s);
+    char* dup = new char[len + 1];
+    strcpy(dup, s);
+    return dup;
+}
+
 int main(int argc, char* argv[]) {
     // Initialize ncurses
     if (argc == 1) {
@@ -132,25 +139,9 @@ int main(int argc, char* argv[]) {
                     handleKeyEvent_tab(artistMenu, songMenu, artist_menu_win, song_menu_win, showingArtists, menu_height, menu_width); 
                     break;
                 case KEY_DOWN:
-                case 'k':
-                  move_menu_down(artistMenu, songMenu, showingArtists); // ncurses helpers  
-                  break;
-                case KEY_UP:
-                case 'j':
-                    move_menu_up(artistMenu, songMenu, showingArtists); // ncurses helpers
-                    break;
-                case KEY_RIGHT:
-                  seekSong(music, 5, 1); // 1 is bool for true ->it will forward (sfml helpers)
-                  break;
-                case KEY_LEFT:
-                    seekSong(music, 5, 0); // sfml helpers
-                    break;
-                case '/': // string search 
-                  handleKeyEvent_slash(artistMenu, songMenu, showingArtists);
-                  break;   
-              case 10:  // Enter key
-                if (showingArtists) {
-                    // Show details of selected artist (if needed) 
+                case 'k': {
+                  move_menu_down(artistMenu, songMenu, showingArtists); // ncurses helpers
+                  if (showingArtists) {
                     ITEM* artItem = current_item(artistMenu);
                     int artselectedIndex = item_index(artItem); 
                     post_menu(artistMenu);
@@ -159,31 +150,110 @@ int main(int argc, char* argv[]) {
                     const char* selectedArtist = allArtists[artselectedIndex].c_str();
 
                     // Update song menu with songs of the selected artist
-                        auto [newSongTitles, newSongPaths] = listSongs(cacheDirectory, selectedArtist, songsDirectory);
-                        for (size_t i = 0; i < songTitles.size(); ++i) {
-                            free_item(songItems[i]);
-                        }
-                        free_menu(songMenu);
-                        werase(menu_win(songMenu));
-                        songItems = new ITEM*[newSongTitles.size() + 1];
-                        for (size_t i = 0; i < newSongTitles.size(); ++i) {
-                            songItems[i] = new_item(strdup(newSongTitles[i].c_str()), "");
-                        }
-                        songItems[newSongTitles.size()] = nullptr;
-                        songMenu = new_menu(songItems);
-                        ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width); 
-                        set_menu_format(songMenu, menu_height, 0);
-                        post_menu(songMenu);
+                    auto [newSongTitles, newSongPaths] = listSongs(cacheDirectory, selectedArtist, songsDirectory);
+                    for (size_t i = 0; i < songTitles.size(); ++i) {
+                        free_item(songItems[i]);
+                    }
+                    free_menu(songMenu);
+                    werase(menu_win(songMenu)); 
+                    songItems = new ITEM*[newSongTitles.size() + 1];
+                    for (size_t i = 0; i < newSongTitles.size(); ++i) {
+                        songItems[i] = new_item(strdup(newSongTitles[i].c_str()), "");
+                    }
+                    songItems[newSongTitles.size()] = nullptr;
+                    songMenu = new_menu(songItems);
+                    ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width); 
+                    set_menu_format(songMenu, menu_height, 0);
+                    set_menu_fore(songMenu, A_NORMAL);
+                    post_menu(songMenu);
 
-                        songTitles = newSongTitles;
-                        songPaths = newSongPaths;
+                    songTitles = newSongTitles;
+                    songPaths = newSongPaths;
+                    wrefresh(menu_win(artistMenu));
+                    wrefresh(menu_win(songMenu));
+                  }
+                  break;
+                }
+                case KEY_UP:
+                case 'j':{
+                    move_menu_up(artistMenu, songMenu, showingArtists); // ncurses helpers
+                    if (showingArtists) {
+                      ITEM* artItem = current_item(artistMenu);
+                      int artselectedIndex = item_index(artItem); 
+                      post_menu(artistMenu);
+                      post_menu(songMenu);
+                      box(menu_win(artistMenu), 0, 0);
+                      const char* selectedArtist = allArtists[artselectedIndex].c_str();
 
-                        showingArtists =!showingArtists;
-                        highlightFocusedWindow(artistMenu, showingArtists);
-                        highlightFocusedWindow(songMenu,!showingArtists);  // Highlight the song menu when switching focus
-                        wrefresh(menu_win(artistMenu));
-                        wrefresh(menu_win(songMenu));
-                    } else {
+                      // Update song menu with songs of the selected artist
+                      auto [newSongTitles, newSongPaths] = listSongs(cacheDirectory, selectedArtist, songsDirectory);
+                      for (size_t i = 0; i < songTitles.size(); ++i) {
+                          free_item(songItems[i]);
+                      }
+                      free_menu(songMenu);
+                      werase(menu_win(songMenu)); 
+                      songItems = new ITEM*[newSongTitles.size() + 1];
+                      for (size_t i = 0; i < newSongTitles.size(); ++i) {
+                          songItems[i] = new_item(strdup(newSongTitles[i].c_str()), "");
+                      }
+                      songItems[newSongTitles.size()] = nullptr;
+                      songMenu = new_menu(songItems);
+                      ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width); 
+                      set_menu_format(songMenu, menu_height, 0);
+                      set_menu_fore(songMenu, A_NORMAL);
+                      post_menu(songMenu);
+
+                      songTitles = newSongTitles;
+                      songPaths = newSongPaths;
+                      wrefresh(menu_win(artistMenu));
+                      wrefresh(menu_win(songMenu));
+                    }
+                    break;
+                }
+                case KEY_RIGHT:
+                  seekSong(music, 5, 1); // 1 is bool for true ->it will forward (sfml helpers)
+                  break;
+                case KEY_LEFT:
+                    seekSong(music, 5, 0); // sfml helpers
+                    break;
+                case '/': // string search 
+                {
+                  handleKeyEvent_slash(artistMenu, songMenu, showingArtists);
+                  if (showingArtists) {
+                    ITEM* artItem = current_item(artistMenu);
+                      int artselectedIndex = item_index(artItem); 
+                      post_menu(artistMenu);
+                      post_menu(songMenu);
+                      box(menu_win(artistMenu), 0, 0);
+                      const char* selectedArtist = allArtists[artselectedIndex].c_str();
+
+                      // Update song menu with songs of the selected artist
+                      auto [newSongTitles, newSongPaths] = listSongs(cacheDirectory, selectedArtist, songsDirectory);
+                      for (size_t i = 0; i < songTitles.size(); ++i) {
+                          free_item(songItems[i]);
+                      }
+                      free_menu(songMenu);
+                      werase(menu_win(songMenu)); 
+                      songItems = new ITEM*[newSongTitles.size() + 1];
+                      for (size_t i = 0; i < newSongTitles.size(); ++i) {
+                          songItems[i] = new_item(strdup(newSongTitles[i].c_str()), "");
+                      }
+                      songItems[newSongTitles.size()] = nullptr;
+                      songMenu = new_menu(songItems);
+                      ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width); 
+                      set_menu_format(songMenu, menu_height, 0);
+                      set_menu_fore(songMenu, A_NORMAL);
+                      post_menu(songMenu);
+
+                      songTitles = newSongTitles;
+                      songPaths = newSongPaths;
+                    wrefresh(menu_win(artistMenu));
+                    wrefresh(menu_win(songMenu));
+                  }
+                  break;
+                }
+              case 10:  // Enter key
+                if (!showingArtists) {
                         // Play selected song from song menu
                         ITEM* curItem = current_item(songMenu);
                         int selectedIndex = item_index(curItem); 
