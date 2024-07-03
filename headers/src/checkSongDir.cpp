@@ -11,16 +11,6 @@ void init_ncurses() {
     keypad(stdscr, TRUE); // Enable function key detection
 }
 
-void draw_background() {
-    for (int y = 0; y < LINES; y++) {
-        for (int x = 0; x < COLS; x++) {
-            if ((y + x) % 2 == 0) {
-                mvaddch(y, x, ACS_CKBOARD | COLOR_PAIR(3));
-            }
-        }
-    }
-}
-
 void draw_title(WINDOW *win, const char *title) {
     wattron(win, A_BOLD);
     mvwprintw(win, 1, 2, title);
@@ -81,11 +71,6 @@ void cleanup(WINDOW *win, const char *song_directory, const std::string& songDir
     }
 }
 
-bool directory_exists(const char *dir_path) {
-    struct stat sb;
-    return stat(dir_path, &sb) == 0 && S_ISDIR(sb.st_mode);
-}
-
 bool has_mp3_files(const char *dir_path) {
     DIR *dir;
     struct dirent *ent;
@@ -126,10 +111,7 @@ int songDirMain(const std::string& songDirPath, const std::string& cacheLitemusD
         init_pair(1, COLOR_RED, COLOR_BLACK);  // Define color pair 1 as red text on black background
         init_pair(2, COLOR_CYAN, COLOR_BLACK); // Define color pair 2 as cyan text on black background
         init_pair(3, COLOR_WHITE, COLOR_BLUE); // Define color pair 3 as white text on blue background
-    }
-
-    // Draw background
-    draw_background();
+    } 
 
     // Create the main window for input
     main_win = newwin(12, 60, (LINES - 15) / 2, (COLS - 60) / 2);

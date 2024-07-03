@@ -33,7 +33,12 @@ inline void changeDirectory(const string& path) {
     if (chdir(path.c_str()) != 0) {
         printErrorAndExit("[ERROR] Failed to change directory.");
     }
-    cout << GREEN << "[SUCCESS] Directory changed successfully." << RESET << endl;
+    cout << GREEN << "[SUCCESS] Directory changed successfully." << "[ " << path << " ]" << RESET << endl;
+}
+
+inline bool directory_exists(const char *dir_path) {
+    struct stat sb;
+    return stat(dir_path, &sb) == 0 && S_ISDIR(sb.st_mode);
 }
 
 #endif // DIRECTORY_UTILS_HPP

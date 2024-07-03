@@ -10,7 +10,7 @@ void playMusic(sf::Music& music, const std::string& songPath);
 void nextSong(sf::Music& music, const std::vector<std::string>& songs, int& currentSongIndex);
 void previousSong(sf::Music& music, const std::vector<std::string>& songs, int& currentSongIndex);
 void adjustVolume(sf::Music& music, float volumeChange);
-char* strdup(const char* s);
+void toggleMute(sf::Music& music, bool isMuted);
 void seekSong(sf::Music& music, int seekVal, bool forward);
 
 #endif

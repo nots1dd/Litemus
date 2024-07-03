@@ -2,6 +2,13 @@
 
 using json = nlohmann::json;
 
+char* strdup(const char* s) {
+    size_t len = strlen(s);
+    char* dup = new char[len + 1];
+    strcpy(dup, s);
+    return dup;
+}
+
 std::string get_home_directory() {
     const char* homeDir = getenv("HOME");
     if (homeDir == nullptr) {
@@ -138,4 +145,8 @@ std::string read_file_to_string(const std::string& path) {
         file.close();
     }
     return buffer.str();
+}
+
+void litemusHelper(const std::string& NC) {
+  std::cout << NC << "LiteMus - Light Music Player (lmus)" << std::endl << std::endl << "run ->Run Litemus" << std::endl << "--help -> Show this help dialog and exit" << std::endl << "--remote-cache -> Remotely cache songs (dir set in $HOME/.cache/litemus/songDirectory.txt)" << std::endl;
 }

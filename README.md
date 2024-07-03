@@ -8,6 +8,8 @@ A fast and interactive music player built with SFML, ncurses, and nlohmann json 
 
 * Insanely fast sorting and caching system thanks to Inode data structure of filesystem and C++ libraries (lmus_cache.h)
 
+* Remote Caching of a directory that immediately registers in the current session
+
 ### Beautiful TUI
 
 * Ncurses library for making the beautiful TUI
@@ -26,6 +28,14 @@ A fast and interactive music player built with SFML, ncurses, and nlohmann json 
 
 ![litemusreadme1](https://github.com/nots1dd/Litemus/assets/140317709/c270df7d-af84-4cf9-a0b7-b475f27a2081)
 ![litemusreadme2](https://github.com/nots1dd/Litemus/assets/140317709/56a5010b-d71e-4a4a-ac27-0ec880970052)
+
+## Pre-Requisites
+
+-> A UNIX filesystem (x86_64 arch)
+
+-> A directory with `mp3` files which have proper embedded metadata (random mp3 files will not work and may lead to some unexepcted results)
+
+-> Dependencies: `cmake`, `ncurses`, `sfml`, `nlohmann-json` (for building this project)
 
 ## Build
 

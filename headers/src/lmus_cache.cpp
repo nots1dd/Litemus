@@ -1,4 +1,3 @@
-#include <ncurses.h>
 #include "../lmus_cache.hpp"
 
 using json = nlohmann::json;
@@ -240,7 +239,7 @@ int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const
 
     // DIRECTORY VARIABLES
     const string cacheDirectory = homeDir + "/.cache/"; 
-
+    cout << BLUE <<  BOLD << "----------------- LITEMUS -- CACHE -- START ------------------" << RESET << endl;
     changeDirectory(songDirectory);
     createDirectory(cacheDirectory);
     createDirectory(cacheLitemusDirectory);
@@ -261,6 +260,7 @@ int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const
     // Compare current inodes with previous inodes
     if (compareInodeVectors(inodes, previousInodes)) {
         cout << PINK << BOLD << "[CACHE] No changes in song files. Exiting without caching." << RESET << endl;
+        cout << BLUE << BOLD << "----------------- LITEMUS -- CACHE -- OVER -------------------" << RESET << endl;
     } else {
         int cachedSongCount = 0;
         time_t startTime = time(nullptr); // record the start time
@@ -339,6 +339,7 @@ int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const
 
         cout << endl << GREEN << BOLD << "[SUCCESS] Total of " << cachedSongCount << " songs have been cached!!" << endl;
         cout << PINK << BOLD << "[CACHE] Songs' cache has been stored in " << cacheInfoDirectory << RESET << endl;
+        cout << BLUE <<  BOLD << "----------------- LITEMUS -- CACHE -- OVER -------------------" << RESET << endl;
     }
 
     return 0;

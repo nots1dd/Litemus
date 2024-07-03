@@ -32,11 +32,12 @@ void adjustVolume(sf::Music& music, float volumeChange) {
     music.setVolume(currentVolume);
 }
 
-char* strdup(const char* s) {
-    size_t len = strlen(s);
-    char* dup = new char[len + 1];
-    strcpy(dup, s);
-    return dup;
+void toggleMute(sf::Music& music, bool isMuted) {
+  if (!isMuted) {
+    adjustVolume(music, -100.f);
+  } else {
+    adjustVolume(music, 100.f);
+  }
 }
 
 void seekSong(sf::Music& music, int seekVal, bool forward) {

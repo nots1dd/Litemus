@@ -1,0 +1,11 @@
+Change type: MAJOR
+
+Summary
+
+-> Added LiteMus arguments to the executable
+
+-> Some major switch case code refactoring (keyHandlers.cpp)
+
+-> Remote caching implemented
+
+-> Overall code cleansing

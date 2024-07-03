@@ -10,6 +10,7 @@
 
 void ncursesSetup();
 void ncursesWinControl(WINDOW* artist_menu_win, WINDOW* song_menu_win, WINDOW* status_win, WINDOW* title_win, const std::string& choice);
+void ncursesWinLoop(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_win, WINDOW* song_menu_win, WINDOW* status_win, WINDOW* title_win, const char* title_content);
 void displayWindow(WINDOW* menu_win, const std::string window);
 void updateStatusBar(WINDOW* status_win, const std::string& songName, const std::string& artistName, const std::string& songGenre, const sf::Music& music, bool firstEnterPressed, bool showingLyrics);
 bool showExitConfirmation(WINDOW* parent_win);

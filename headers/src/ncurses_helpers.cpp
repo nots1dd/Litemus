@@ -88,6 +88,34 @@ init_pair(GREY_BACKGROUND_COLOR, COLOR_BLACK, COLOR_WHITE);  // Grey background 
       mvwprintw(menu_win, 12, 2, "Current Song will play in a LOOP if you DO NOT exit lyrics view!!");
       wrefresh(menu_win);
   }
+  else if (window == "LyricErr") {
+    werase(menu_win);
+    box(menu_win, 0, 0);
+    mvwprintw(menu_win, 0, 2, " Artists: ");
+    mvwprintw(menu_win, 2, 20, "NO LYRICS FOR THIS SONG!");
+    mvwprintw(menu_win, 4, 20, "Redirecting to main window...");
+    wrefresh(menu_win);
+  }
+}
+
+void ncursesWinLoop(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_win, WINDOW* song_menu_win, WINDOW* status_win, WINDOW* title_win, const char* title_content) {
+  ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "refresh");
+  box(artist_menu_win, 0, 0);
+  box(song_menu_win, 0, 0);
+  wmove(title_win, 0, 0);
+  wclrtoeol(title_win);
+  wattron(title_win, COLOR_PAIR(5));
+  wbkgd(title_win, COLOR_PAIR(5) | A_BOLD);
+  wattron(title_win, COLOR_PAIR(6));
+  mvwprintw(title_win, 0, 1, title_content);  // Replace with your title
+  mvwprintw(artist_menu_win, 0, 2, " Artists: ");
+  mvwprintw(song_menu_win, 0, 2, " Songs: ");
+  wattroff(title_win, COLOR_PAIR(5));
+  wattroff(title_win, COLOR_PAIR(6));
+  wrefresh(title_win);
+  post_menu(artistMenu);  // Post the active menu
+  post_menu(songMenu);
+  ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "refresh");
 }
 
 void updateStatusBar(WINDOW* status_win, const std::string& songName, const std::string& artistName, const std::string& songGenre, const sf::Music& music, bool firstEnterPressed, bool showingLyrics) {

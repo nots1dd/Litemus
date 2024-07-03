@@ -2,6 +2,7 @@
 #define MAIN_HPP
 
 #include <iostream>
+#include <ncurses.h>
 #include <unistd.h>
 #include <vector>
 #include <string>

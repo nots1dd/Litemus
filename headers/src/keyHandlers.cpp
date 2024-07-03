@@ -1,5 +1,7 @@
 #include "../keyHandlers.hpp"
 #include "../ncurses_helpers.hpp"
+#include "../parsers.hpp"
+#include "../sfml_helpers.hpp"
 
 void handleKeyEvent_1(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_win, bool showingArtists, int menu_height, int menu_width) {
   werase(artist_menu_win);
@@ -122,3 +124,85 @@ void handleKeyEvent_slash(MENU* artistMenu, MENU* songMenu, bool showingArtists)
   }
 
 }
+
+
+void displayLyricsWindow(WINDOW *artist_menu_win, std::string& currentLyrics, std::string& currentSong, std::string& currentArtist, int menu_height, int menu_width, sf::Music &music, WINDOW *status_win, bool firstEnterPressed, bool showingLyrics, WINDOW *song_menu_win, MENU *songMenu, std::string& currentGenre, bool showingArtists) {
+    mvwprintw(artist_menu_win, 0, 2, "  Lyrics: "); 
+    wrefresh(artist_menu_win);
+    werase(artist_menu_win); 
+    int x, y;
+    getmaxyx(stdscr, y, x); // get the screen dimensions
+    int warning_width = 75; // adjust this to your liking
+    int warning_height = 15;
+    int warning_x = x / 2; // center the input field
+    int warning_y = y / 2; // center the input field
+
+    WINDOW *warning_win = newwin(warning_height, warning_width, warning_y, warning_x);
+    displayWindow(warning_win, "warning");
+
+    WINDOW *lyrics_win = derwin(artist_menu_win, menu_height - 2, menu_width - 2, 1, 1);
+    mvwprintw(artist_menu_win, 0, 2, " Lyrics: ");
+
+    int start_line = 0; // To keep track of the starting line for scrolling
+    std::vector<std::string> lines = splitStringByNewlines(currentLyrics);
+
+    // Initial display of lyrics
+    printMultiLine(lyrics_win, lines, start_line, currentSong, currentArtist);
+    wrefresh(lyrics_win);
+
+    int ch;
+    while ((ch = getch()) != '1') { // Press '1' to exit
+        switch (ch) {
+            case KEY_UP:
+            case 'j':
+                if (start_line > 0) {
+                    start_line--;
+                }
+                break;
+            case KEY_DOWN:
+            case 'k':
+                if (start_line + menu_height - 2 < lines.size()) {
+                    start_line++;
+                }
+                break;
+            case 'p':
+                if (music.getStatus() == sf::Music::Paused) {
+                    music.play();
+                } else {
+                    music.pause();
+                }
+                break;
+            case '9':
+                adjustVolume(music, 10.f);
+                break;
+            case '0':
+                adjustVolume(music, -10.f);
+                break;
+        }
+        werase(lyrics_win); // Clear the sub-window
+        printMultiLine(lyrics_win, lines, start_line, currentSong, currentArtist);
+        showingLyrics = true;
+        box(song_menu_win, 0, 0);
+        post_menu(songMenu);
+        updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
+        wrefresh(lyrics_win);
+        mvwprintw(song_menu_win, 0, 2, " Songs: ");
+        wrefresh(song_menu_win);
+        displayWindow(warning_win, "warning");
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+}
+
+void quitFunc(sf::Music& music, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles, ITEM** artistItems, ITEM** songItems, MENU* artistMenu, MENU* songMenu) {
+  music.stop();
+  // Free resources and clean up
+  for (size_t i = 0; i < songTitles.size(); ++i) {
+      free_item(songItems[i]);
+  }
+  free_menu(songMenu);
+  for (size_t i = 0; i < allArtists.size(); ++i) {
+      free_item(artistItems[i]);
+  }
+  free_menu(artistMenu); 
+}
+
