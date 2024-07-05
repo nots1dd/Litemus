@@ -12,5 +12,6 @@ void previousSong(sf::Music& music, const std::vector<std::string>& songs, int& 
 void adjustVolume(sf::Music& music, float volumeChange);
 void toggleMute(sf::Music& music, bool isMuted);
 void seekSong(sf::Music& music, int seekVal, bool forward);
+std::string getSongDuration(const std::string& songPath);
 
 #endif

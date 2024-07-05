@@ -71,8 +71,10 @@ void displayWindow(WINDOW* menu_win, const std::string window) {
     mvwprintw(menu_win, 17, 2, "/ - String search in focused window");
     mvwprintw(menu_win, 18, 2, "Tab - Toggle Focused Window");
     mvwprintw(menu_win, 20, 2, "2 - To show help menu");
+    mvwprintw(menu_win, 21, 2, "3 - Lyrics View");
+    mvwprintw(menu_win, 22, 2, "4 - Session Details");
 init_pair(GREY_BACKGROUND_COLOR, COLOR_BLACK, COLOR_WHITE);  // Grey background and black text for title
-    mvwprintw(menu_win, 22, 2, "Press '1' to go back to the menu");
+    mvwprintw(menu_win, 24, 2, "Press '1' to go back to the menu");
     wrefresh(menu_win);
   }
   else if (window == "warning") {
@@ -251,12 +253,10 @@ void printMultiLine(WINDOW* win, const std::vector<std::string>& lines, int star
     }
 }
 
-void ncursesMenuSetup(MENU* Menu, WINDOW* win, int menu_height, int menu_width) {
+void ncursesMenuSetup(MENU* Menu, WINDOW* win, int menu_height, int menu_width, const char* type) {
   set_menu_win(Menu, win);
-  set_menu_sub(Menu, derwin(win, menu_height - 3, menu_width - 2, 2, 1));
-  wattron(win, COLOR_PAIR(COLOR_BLUE));
-  set_menu_mark(Menu, " > ");
-  wattroff(win, COLOR_PAIR(COLOR_BLUE));
+  set_menu_sub(Menu, derwin(win, menu_height - 3, menu_width - 2, 2, 1)); 
+  set_menu_mark(Menu, " ->");
 }
 
 void move_menu_down(MENU* artistMenu, MENU* songMenu, bool showingArtists) {
@@ -323,7 +323,7 @@ void move_menu_up(MENU* artistMenu, MENU* songMenu, bool showingArtists) {
   }
 }
 
-ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles) {
+ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles, std::vector<std::string>& songDurations) {
   if (name == "artist") {
     ITEM** artistItems = new ITEM*[allArtists.size() + 1];
     for (size_t i = 0; i < allArtists.size(); ++i) {
@@ -335,8 +335,8 @@ ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists
   else if (name == "song") {
     ITEM** songItems = new ITEM*[songTitles.size() + 1];
     for (size_t i = 0; i < songTitles.size(); ++i) {
-        songItems[i] = new_item(songTitles[i].c_str(), "");
-    }
+        songItems[i] = new_item(strdup(songTitles[i].c_str()), "");
+  }
     songItems[songTitles.size()] = nullptr;
     return songItems;
   }

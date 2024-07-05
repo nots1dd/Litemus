@@ -1,0 +1,11 @@
+Change type: MEDIUM
+
+Summary
+
+-> Added a session details window (shows current directory playing, no of artists and songs)
+
+-> Added duration timestamp to each song item
+
+-> A known bug exists wherein when we are scrolling through other artists songs while listening to another artist, the array changes and so the all song instances of that prev   ious artist is destroyed (slightly annoying for users)
+
+-> Code refactor

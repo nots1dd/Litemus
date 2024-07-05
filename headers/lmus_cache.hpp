@@ -20,6 +20,7 @@ using namespace std;
 // Function declarations
 vector<string> getInodes();
 string getFileNameFromInode(const string& inode);
+vector<string> loadPreviousInodes(const string& filePath);
 void storeMetadataJSON(const string& fileName, json& artistsArray, json& songsInfoArray);
 void saveArtistsToFile(const json& artistsArray, const string& filePath);
 void saveSongDirToFile(const std::string& songDirPath, const string& songDirectory);

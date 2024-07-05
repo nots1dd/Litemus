@@ -1,4 +1,5 @@
 #include "../parsers.hpp"
+#include "../sfml_helpers.hpp"
 
 using json = nlohmann::json;
 
@@ -35,11 +36,12 @@ std::vector<std::string> parseArtists(const std::string& artistsFile) {
     return artists;
 }
 
-std::pair<std::vector<std::string>, std::vector<std::string>> listSongs(const std::string& cacheFile, const std::string& artistName, const std::string& songsDirectory) {
+
+std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>> listSongs(const std::string& cacheFile, const std::string& artistName, const std::string& songsDirectory) {
     std::ifstream file(cacheFile);
     if (!file.is_open()) {
         std::cerr << "Could not open cache file: " << cacheFile << std::endl;
-        return {{}, {}};
+        return {{}, {}, {}};
     }
 
     json j;
@@ -47,44 +49,48 @@ std::pair<std::vector<std::string>, std::vector<std::string>> listSongs(const st
         file >> j;
     } catch (const std::exception& e) {
         std::cerr << "Error parsing JSON: " << e.what() << std::endl;
-        return {{}, {}};
+        return {{}, {}, {}};
     }
 
     std::vector<std::string> songTitles;
     std::vector<std::string> songPaths;
+    std::vector<std::string> songDurations;
 
     // Iterate over each artist
     for (auto it = j.begin(); it != j.end(); ++it) {
         if (it.key() == artistName) {
-           auto& albums = it.value();
+            auto& albums = it.value();
 
-        // Iterate over each album of the artist
-        for (auto albumIt = albums.begin(); albumIt != albums.end(); ++albumIt) {
-            std::string albumName = albumIt.key();
-            auto& discs = albumIt.value();
+            // Iterate over each album of the artist
+            for (auto albumIt = albums.begin(); albumIt != albums.end(); ++albumIt) {
+                std::string albumName = albumIt.key();
+                auto& discs = albumIt.value();
 
-            // Iterate over each disc in the album
-            for (auto discIt = discs.begin(); discIt != discs.end(); ++discIt) {
-                auto& tracks = *discIt;
+                // Iterate over each disc in the album
+                for (auto discIt = discs.begin(); discIt != discs.end(); ++discIt) {
+                    auto& tracks = *discIt;
 
-                // Iterate over each track in the disc
-                for (auto trackIt = tracks.begin(); trackIt != tracks.end(); ++trackIt) {
-                    auto& songInfo = *trackIt;
+                    // Iterate over each track in the disc
+                    for (auto trackIt = tracks.begin(); trackIt != tracks.end(); ++trackIt) {
+                        auto& songInfo = *trackIt;
 
-                    // Check if the track contains a valid song object
-                    if (!songInfo.empty()) {
-                        std::string songTitle = songInfo["title"].get<std::string>();
-                        std::string songFilename = songInfo["filename"].get<std::string>();
-                        songTitles.push_back(songTitle);
-                        songPaths.push_back(songsDirectory + songFilename); // Adjust the path as per your directory structure
+                        // Check if the track contains a valid song object
+                        if (!songInfo.empty()) {
+                            std::string songTitle = songInfo["title"].get<std::string>();
+                            std::string songFilename = songInfo["filename"].get<std::string>();
+                            std::string songPath = songsDirectory + songFilename;
+
+                            songTitles.push_back(songTitle);
+                            songPaths.push_back(songPath);
+                            songDurations.push_back(getSongDuration(songPath));
+                        }
                     }
                 }
             }
         }
-      }
     }
 
-    return {songTitles, songPaths};
+    return {songTitles, songPaths, songDurations};
 }
 
 std::pair<std::string, std::string> findCurrentGenreArtist(const std::string& cacheFile, const std::string& currentSong, std::string& currentLyrics) {
@@ -143,3 +149,40 @@ std::string read_file_to_string(const std::string& path) {
 void litemusHelper(const std::string& NC) {
   std::cout << NC << "LiteMus - Light Music Player (lmus)" << std::endl << std::endl << "run ->Run Litemus" << std::endl << "--help -> Show this help dialog and exit" << std::endl << "--remote-cache -> Remotely cache songs (dir set in $HOME/.cache/litemus/songDirectory.txt)" << std::endl;
 }
+
+size_t getMaxSongTitleLength(const std::vector<std::string>& songTitles, const std::vector<std::string>& songDurations) {
+    size_t maxLength = 0;
+    for (size_t i = 0; i < songTitles.size(); ++i) {
+        size_t combinedLength = songTitles[i].length() + songDurations[i].length() + 10; // 5 is for spaces and brackets
+        if (combinedLength > maxLength) {
+            maxLength = combinedLength;
+        }
+    }
+    return maxLength;
+}
+
+std::string getRequiredWhitespaces(const std::string& title, size_t maxLength) {
+    size_t titleLength = title.length();
+    if (titleLength >= maxLength) {
+        return "";  // No extra whitespace needed if title length is already max
+    } else {
+        return std::string(maxLength - titleLength, ' ');
+    }
+}
+
+std::vector<std::string> getTitlesWithWhiteSpaces(const std::vector<std::string>& songTitles, const std::vector<std::string>& songDurations, size_t maxLength) {
+    std::vector<std::string> titlesWithWhitespaces;
+    for (size_t i = 0; i < songTitles.size(); ++i) {
+        std::string formattedTitle = songTitles[i] + getRequiredWhitespaces(songTitles[i], maxLength) + " " + songDurations[i];
+        titlesWithWhitespaces.push_back(formattedTitle);
+    }
+    return titlesWithWhitespaces;
+}
+
+std::string removeWhitespace(const std::string& str) {
+    std::string result;
+    std::remove_copy_if(str.begin(), str.end(), std::back_inserter(result), ::isspace);
+    return result;
+}
+
+

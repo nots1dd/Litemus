@@ -52,3 +52,19 @@ void seekSong(sf::Music& music, int seekVal, bool forward) {
   }
 }
 
+std::string getSongDuration(const std::string& songPath) {
+    sf::Music music;
+    if (!music.openFromFile(songPath)) {
+        return "00:00";
+    }
+    sf::Time duration = music.getDuration();
+    int seconds = static_cast<int>(duration.asSeconds());
+    int minutes = seconds / 60;
+    seconds %= 60;
+    char buffer[6];
+    snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, seconds);
+    return std::string(buffer);
+}
+
+
+

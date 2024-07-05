@@ -5,7 +5,7 @@
 
 void handleKeyEvent_1(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_win, bool showingArtists, int menu_height, int menu_width) {
   werase(artist_menu_win);
-  ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width);
+  ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width, "artist");
   post_menu(artistMenu);
   post_menu(songMenu);
   box(artist_menu_win, 0, 0);
@@ -18,7 +18,7 @@ void handleKeyEvent_tab(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_wi
   if (showingArtists) {
       // Switch focus to artist menu
       werase(artist_menu_win);
-      ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width);
+      ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width, "artist");
       post_menu(artistMenu);
       post_menu(songMenu);
       box(artist_menu_win, 0, 0);
@@ -27,7 +27,7 @@ void handleKeyEvent_tab(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_wi
       wrefresh(artist_menu_win);
   } else {
       // Switch focus to song menu
-      ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width);
+      ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width, "song");
       post_menu(songMenu);
       post_menu(artistMenu);
       box(song_menu_win, 0, 0);
@@ -206,3 +206,15 @@ void quitFunc(sf::Music& music, std::vector<std::string>& allArtists, std::vecto
   free_menu(artistMenu); 
 }
 
+void printSessionDetails(WINDOW* menu_win, const std::string& songsDirectory, int artistsSize, int songsSize) {
+  werase(menu_win);
+  mvwprintw(menu_win, 2, 10, "LiteMus Session Details");
+  std::string dirStr = "Directory: " + songsDirectory;
+  mvwprintw(menu_win, 4, 4, dirStr.c_str());
+  std::stringstream artStr;
+  artStr << "No of artists: " << artistsSize << std::endl << std::endl << "    No of songs: " << songsSize;
+  std::string newartStr = artStr.str();
+  mvwprintw(menu_win, 6, 4, newartStr.c_str());
+  box(menu_win, 0, 0);
+  wrefresh(menu_win);
+}
