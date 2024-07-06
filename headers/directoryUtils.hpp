@@ -3,6 +3,7 @@
 #define DIRECTORY_UTILS_HPP
 
 #include <iostream>
+#include <filesystem>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cstring>

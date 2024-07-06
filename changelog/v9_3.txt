@@ -1,0 +1,7 @@
+Change type: MINOR (bugfix)
+
+Summary
+
+-> Added a debug file for easy checking of metadata extraction
+
+-> New argument `--clear-cache` to clear the songDirectory.txt and debug.log files for a fresh litemus run

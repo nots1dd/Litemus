@@ -73,7 +73,7 @@ string escapeSpecialCharacters(const string& fileName) {
 }
 
 // Function to store metadata in JSON format
-void storeMetadataJSON(const string& inode, const string& fileName, json& artistsArray, vector<SongMetadata>& songMetadata) {
+void storeMetadataJSON(const string& inode, const string& fileName, json& artistsArray, vector<SongMetadata>& songMetadata, const string debugFile) {
     // Escape special characters in the filename
     string escapedFileName = escapeSpecialCharacters(fileName);
 
@@ -83,14 +83,91 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
 
     auto metadata = json::parse(metadataInfo);
 
-    string artist = metadata["format"]["tags"].contains("artist") ? metadata["format"]["tags"]["artist"].get<string>() : "Unknown_Artist";
-    string album = metadata["format"]["tags"].contains("album") ? metadata["format"]["tags"]["album"].get<string>() : "Unknown_Album";
-    string title = metadata["format"]["tags"].contains("title") ? metadata["format"]["tags"]["title"].get<string>() : "Unknown_Title";
-    int disc = metadata["format"]["tags"].contains("disc") ? stoi(metadata["format"]["tags"]["disc"].get<string>()) : 0;
-    int track = metadata["format"]["tags"].contains("track") ? stoi(metadata["format"]["tags"]["track"].get<string>()) : 0;
-    string genre = metadata["format"]["tags"].contains("genre") ? metadata["format"]["tags"]["genre"].get<string>() : "";
-    string date = metadata["format"]["tags"].contains("date") ? metadata["format"]["tags"]["date"].get<string>() : "";
-    string lyrics = metadata["format"]["tags"].contains("lyrics-XXX") ? metadata["format"]["tags"]["lyrics-XXX"].get<string>() : "";
+    string artist = "Unknown_Artist";
+    string album = "Unknown_Album";
+    string title = "Unknown_Title";
+    int disc = 1;
+    int track = 1;
+    string genre = "Unknown_Genre";
+    string date = "Unknown_Date";
+    string lyrics = "";
+
+    // Log the metadata extraction process
+    ofstream logFile(debugFile, ios::trunc);
+    if (logFile.is_open()) {
+        logFile << "Storing Metadata for: " << fileName << endl;
+
+        if (metadata["format"]["tags"].contains("artist")) {
+            artist = metadata["format"]["tags"]["artist"].get<string>();
+            logFile << "Artist: extracted successfully +" << endl;
+        } else {
+            logFile << "Artist: extraction failed -" << endl;
+        }
+
+        if (metadata["format"]["tags"].contains("album")) {
+            album = metadata["format"]["tags"]["album"].get<string>();
+            logFile << "Album: extracted successfully +" << endl;
+        } else {
+            logFile << "Album: extraction failed -" << endl;
+        }
+
+        if (metadata["format"]["tags"].contains("title")) {
+            title = metadata["format"]["tags"]["title"].get<string>();
+            logFile << "Title: extracted successfully +" << endl;
+        } else {
+            logFile << "Title: extraction failed -" << endl;
+        }
+
+        if (metadata["format"]["tags"].contains("disc")) {
+            string discStr = metadata["format"]["tags"]["disc"].get<string>();
+            try {
+                disc = std::stoi(discStr);
+                logFile << "Disc: extracted successfully +" << endl;
+            } catch (const std::invalid_argument&) {
+                logFile << "Disc: extraction failed -" << endl;
+            }
+        } else {
+            logFile << "Disc: extraction failed -" << endl;
+        }
+
+        if (metadata["format"]["tags"].contains("track")) {
+            string trackStr = metadata["format"]["tags"]["track"].get<string>();
+            try {
+                track = std::stoi(trackStr);
+                logFile << "Track: extracted successfully +" << endl;
+            } catch (const std::invalid_argument&) {
+                logFile << "Track: extraction failed -" << endl;
+            }
+        } else {
+            logFile << "Track: extraction failed -" << endl;
+        }
+
+        if (metadata["format"]["tags"].contains("genre")) {
+            genre = metadata["format"]["tags"]["genre"].get<string>();
+            logFile << "Genre: extracted successfully +" << endl;
+        } else {
+            logFile << "Genre: extraction failed -" << endl;
+        }
+
+        if (metadata["format"]["tags"].contains("date")) {
+            date = metadata["format"]["tags"]["date"].get<string>();
+            logFile << "Date: extracted successfully +" << endl;
+        } else {
+            logFile << "Date: extraction failed -" << endl;
+        }
+
+        if (metadata["format"]["tags"].contains("lyrics-XXX")) {
+            lyrics = metadata["format"]["tags"]["lyrics-XXX"].get<string>();
+            logFile << "Lyrics: extracted successfully +" << endl;
+        } else {
+            logFile << "Lyrics: extraction failed -" << endl;
+        }
+
+        logFile << "--------------------------------------" << endl;
+        logFile.close();
+    } else {
+        cerr << "Unable to open debug log file" << endl;
+    }
 
     // Check if artist is already in the array
     if (find(artistsArray.begin(), artistsArray.end(), artist) == artistsArray.end()) {
@@ -129,7 +206,7 @@ void printArtists(const json& artistsArray) {
     }
 }
 
-void storeSongsJSON(const string& filePath, const vector<SongMetadata>& songMetadata) {
+void storeSongsJSON(const string& filePath, const vector<SongMetadata>& songMetadata, const string debugFile) {
     json songsJson;
 
     for (const auto& song : songMetadata) {
@@ -171,8 +248,12 @@ void storeSongsJSON(const string& filePath, const vector<SongMetadata>& songMeta
         } else {
             cerr << "Skipping invalid song metadata: " << song.fileName << endl;
             // Print out the metadata for debugging
-            cout << "Artist: " << song.artist << ", Album: " << song.album << ", Disc: " << song.disc << ", Track: " << song.track << endl;
-
+            ofstream logFile(debugFile, ios::trunc);
+            if (logFile.is_open()) {
+                logFile << "Skipping invalid song metadata: " << song.fileName << endl;
+                logFile << "Artist: " << song.artist << ", Album: " << song.album << ", Disc: " << song.disc << ", Track: " << song.track << endl;
+                logFile.close();
+            }
         }
     }
 
@@ -235,7 +316,7 @@ void drawProgressBar(WINDOW* win, int y, int x, float progress) {
     wrefresh(win);
 }
 
-int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const std::string cacheLitemusDirectory, const std::string cacheInfoDirectory, const std::string songCacheInfoFile, const std::string artistsFilePath, const std::string songDirPathCache) {
+int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const std::string cacheLitemusDirectory, const std::string cacheInfoDirectory, const std::string songCacheInfoFile, const std::string artistsFilePath, const std::string songDirPathCache, const std::string debugFile) {
 
     // DIRECTORY VARIABLES
     const string cacheDirectory = homeDir + "/.cache/"; 
@@ -297,7 +378,7 @@ int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const
             mvwprintw(fileWin, 1, 1, "==> %s", finalFileName.c_str());
             wrefresh(fileWin);
 
-            storeMetadataJSON(inode, fileName, artistsArray, songMetadata);
+            storeMetadataJSON(inode, fileName, artistsArray, songMetadata, debugFile);
             cachedSongCount++;
             time_t currentTime = time(nullptr);
 
@@ -328,7 +409,7 @@ int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const
             return a.track < b.track;
         });
 
-        storeSongsJSON(cacheInfoDirectory + "/song_names.json", songMetadata);
+        storeSongsJSON(cacheInfoDirectory + "/song_names.json", songMetadata, debugFile);
 
         // Save current inodes for future comparison
         saveCurrentInodes(inodes, songCacheInfoFile);

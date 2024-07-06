@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "headers/lmus_cache.hpp"
 #include "headers/sfml_helpers.hpp"
 #include "headers/ncurses_helpers.hpp"
@@ -18,6 +19,7 @@ const std::string songDirCache = cacheLitemusDir + "songDirectory.txt";
 const std::string cacheDirectory = cacheInfoDir + "song_names.json";
 const std::string cacheInfoFile = cacheInfoDir + "song_cache_info.json";
 const std::string cacheArtistDirectory = cacheInfoDir + "artists.json";
+const std::string cacheDebugFile = cacheLitemusDir + "debug.log";
 
 // ansi escape vals (colors)
 const string ERROR = "\033[31m";
@@ -47,18 +49,28 @@ int main(int argc, char* argv[]) {
     if (argc <= 2 && std::string(argv[1]) == "--remote-cache") {
         songDirMain(songDirCache, cacheLitemusDir);
         std::string songsDirectory = read_file_to_string(songDirCache);
-        lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache);
+        lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache, cacheDebugFile);
         cout << endl << "Successfully cached the directory " << GREEN << songsDirectory << NC << endl << "Run `" << GREEN << "lmus run" << NC << "` to experience LiteMus!" << endl;
         return 0;
     }
     else if (argc == 2 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "help")) {
       litemusHelper(NC);
       return 0;
-    }    
+    }
+    else if (argc == 2 && std::string(argv[1]) == "--clear-cache") {
+      if (remove(songDirCache.c_str()) == 0 && remove(cacheDebugFile.c_str()) == 0) {
+        cout << YELLOW << BOLD << "Removed songDirectory.txt and log files from cache!" << NC << endl;
+        cout << endl << "Run `" << GREEN << "lmus run" << NC << "` to add new directory cache!!" << endl;
+        return 0;
+      } else {
+        cout << ERROR << BOLD << "[DIR-ERROR] Something went wrong while trying to remove songDirectory.txt" << endl;
+        return 1;
+      }
+    }
     else if (argc == 2 && std::string(argv[1]) == "run") {
     songDirMain(songDirCache, cacheLitemusDir);
     std::string songsDirectory = read_file_to_string(songDirCache);
-    lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache);     
+    lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache, cacheDebugFile);     
     ncursesSetup();
 
     // Cache directory and song information
