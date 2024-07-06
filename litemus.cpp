@@ -59,6 +59,7 @@ int main(int argc, char* argv[]) {
     }
     else if (argc == 2 && std::string(argv[1]) == "--clear-cache") {
       if (remove(songDirCache.c_str()) == 0 && remove(cacheDebugFile.c_str()) == 0) {
+        deleteDirectory(cacheInfoDir);
         cout << YELLOW << BOLD << "Removed songDirectory.txt and log files from cache!" << NC << endl;
         cout << endl << "Run `" << GREEN << "lmus run" << NC << "` to add new directory cache!!" << endl;
         return 0;
@@ -141,6 +142,7 @@ int main(int argc, char* argv[]) {
     bool showingLyrics = false;
     bool isMuted = false;
     bool updateSongMenu = false;
+    bool showingartMen = true;
 
     highlightFocusedWindow(artistMenu, true);
     highlightFocusedWindow(songMenu, false);
@@ -149,10 +151,17 @@ int main(int argc, char* argv[]) {
         if (ch != ERR) {
             switch (ch) {
                 case '1':
+                  if (!showingArtists) {
+                    highlightFocusedWindow(artistMenu, true);
+                    highlightFocusedWindow(songMenu, false);
+                    showingArtists = !showingArtists;
+                  }
+                  showingartMen = true;
                   handleKeyEvent_1(artistMenu, songMenu, artist_menu_win, showingArtists, menu_height, menu_width); 
                   break;
                 case 9:  // Tab to switch between menus
                     updateSongMenu = false;
+                    showingartMen = true;
                     showingArtists = !showingArtists;
                     handleKeyEvent_tab(artistMenu, songMenu, artist_menu_win, song_menu_win, showingArtists, menu_height, menu_width);
                     break;
@@ -257,6 +266,12 @@ int main(int argc, char* argv[]) {
                     }
                     break;
                 case '2':  // Display help window
+                    if (showingArtists) {
+                      highlightFocusedWindow(artistMenu, false);
+                      highlightFocusedWindow(songMenu, true);
+                      showingArtists = !showingArtists;
+                    }
+                    showingartMen = false;
                     displayWindow(artist_menu_win, "help");
                     break;
                 case '3':
@@ -277,7 +292,13 @@ int main(int argc, char* argv[]) {
                     showingLyrics = false;
                     break;
                 case '4':
-                    printSessionDetails(artist_menu_win, songsDirectory, artistsSize, songsSize);
+                    if (showingArtists) {
+                      highlightFocusedWindow(artistMenu, false);
+                      highlightFocusedWindow(songMenu, true);
+                      showingArtists = !showingArtists;
+                    }
+                    showingartMen = false;
+                    printSessionDetails(artist_menu_win, songsDirectory, cacheLitemusDir, cacheDebugFile, artistsSize, songsSize);
                     break;
                 case 'q':  // Quit
                 if (showExitConfirmation(song_menu_win)) {
@@ -343,7 +364,7 @@ int main(int argc, char* argv[]) {
 
         // Update status bar and refresh windows
         updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
-        ncursesWinLoop(artistMenu, songMenu, artist_menu_win, song_menu_win, status_win, title_win, title_content); 
+        ncursesWinLoop(artistMenu, songMenu, artist_menu_win, song_menu_win, status_win, title_win, title_content, showingartMen); 
         std::this_thread::sleep_for(std::chrono::milliseconds(10));  // Optional delay
     }
 

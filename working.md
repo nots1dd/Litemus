@@ -31,7 +31,8 @@
 |  Console Output |                           |                      |
 |  (No changes in |                           |                      |
 |   song files)   |                           |                      |
-|                 |                           |                      |
+|   Litemus TUI   |                           |                      |
+|     redirect    |                           |                      |
 +-----------------+                           |                      |
                                    +----------------------+
                                    |                      |
@@ -64,17 +65,16 @@
           +------------------------+--------------------------+
                                    |
                                    v
-  +---------------------------------------------------------------+
-  |          Output: JSON Files with Cached Metadata               |
-  |   artists.json, song_names.json, song_cache_info.json          |
-  +---------------------------------------------------------------+
-                                   |
+  +---------------------------------------------------------------+      +----------------------------+
+  |          Output: JSON Files with Cached Metadata               |     |    Extraction Debug File   |
+  |   artists.json, song_names.json, song_cache_info.json          |-- > |         debug.log          |
+  +---------------------------------------------------------------+      |                            |
+                                   |                                     +----------------------------+
                                    v
   +---------------------------------------------------------------+
   |                 Console Output: Success Messages              |
   |     (Total songs cached, caching directories, success status) |
   +---------------------------------------------------------------+
-
 ```
 ### Caching System Overview
 
@@ -101,6 +101,7 @@ The caching system implemented in `lmus_cache.hpp` aims to organize and store me
    - **File Caching**: If changes are detected, the system proceeds to cache metadata and updates the cache files (`artists.json`, `song_names.json`, and `song_cache_info.json`).
 
 6. **Output and Logging:**
+   - Stores the extraction output of each metadata field of every inode in a `debug.log` file.
    - Provides console output to indicate the progress and status of the caching process.
    - Displays success messages upon successful caching and alerts for errors or issues encountered.
 
@@ -109,7 +110,7 @@ The caching system implemented in `lmus_cache.hpp` aims to organize and store me
 Upon running the caching system:
 
 - **Initial Run:**
-  - It scans the directory for `.mp3` files, extracts metadata using `ffprobe`, and organizes this data into JSON files (`artists.json` and `song_names.json`).
+  - It scans the directory for `.mp3, .wav, .flac` files, extracts metadata using `ffprobe`, and organizes this data into JSON files (`artists.json` and `song_names.json`).
 
 - **Subsequent Runs:**
   - It compares the current set of files (by inodes) with previously cached files (`song_cache_info.json`).
@@ -121,9 +122,9 @@ Upon running the caching system:
 
 ### Example Scenario
 
-Suppose you have a directory `music/` containing various `.mp3` files. When you run `lmus_cache_main("music/")`, the system will:
+Suppose you have a directory `music/` containing various `.mp3 / .wav / .flac` files. When you run `lmus_cache_main("music/")`, the system will:
 
-- Analyze each `.mp3` file using `ffprobe`.
+- Analyze each `.mp3 / .wav / .flac` file using `ffprobe`.
 - Create JSON files (`artists.json`, `song_names.json`) containing structured metadata organized by artist, album, disc, and track.
 - Compare current and previous states to determine changes in the file set.
 - Output success messages if caching is successful or error messages if issues arise.
@@ -133,3 +134,5 @@ Suppose you have a directory `music/` containing various `.mp3` files. When you 
 There might (and is) a much better way of handling caching and updating songs in a directory, but this is what I thought would be the most practical way of doing it and has accomplised what I set out to do: A cache system that is NOT reliant on the string of the song filename, rather a permanent address (for UNIX systems) that always points toward a file in the UNIX filesystem.
 
 ->It might not also be the wisest option to have JSON files as a database, so I will consider shifting it to a YAML file in the future but since these files only contain strings with some unexpected shell special characters (like $, /), these do not pose a problem yet.
+
+->The integration of multiple audio formats with this code is also very easy to the modularity of code and great support from the used libraries (mainly sfml)

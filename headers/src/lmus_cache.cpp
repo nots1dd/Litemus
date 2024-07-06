@@ -13,7 +13,8 @@ const string YELLOW = "\033[33m";
 const string BOLD = "\033[1m";
 
 // FILE EXTENSION TO CACHE
-const string extension = ".mp3";
+const vector<string> extensions = {".mp3", ".wav", ".flac"};
+
 
 struct SongMetadata {
     string fileName;
@@ -30,20 +31,22 @@ struct SongMetadata {
 
 // Function to get the list of inodes
 vector<string> getInodes() {
-    const string output_cmd = "ls -i *" + extension + " | awk '{print $1}'";
-    string output = executeCommand(output_cmd);
     vector<string> inodes;
-    stringstream ss(output);
-    string inode;
+    for (const string& ext : extensions) {
+        const string output_cmd = "ls -i *" + ext + " | awk '{print $1}'";
+        string output = executeCommand(output_cmd);
+        stringstream ss(output);
+        string inode;
 
-    while (getline(ss, inode, '\n')) {
-        if (!inode.empty()) {
-            inodes.push_back(inode);
+        while (getline(ss, inode, '\n')) {
+            if (!inode.empty()) {
+                inodes.push_back(inode);
+            }
         }
     }
-
     return inodes;
 }
+
 
 // Function to get the file name from an inode
 string getFileNameFromInode(const string& inode) {
@@ -72,7 +75,6 @@ string escapeSpecialCharacters(const string& fileName) {
     return escapedFileName;
 }
 
-// Function to store metadata in JSON format
 void storeMetadataJSON(const string& inode, const string& fileName, json& artistsArray, vector<SongMetadata>& songMetadata, const string debugFile) {
     // Escape special characters in the filename
     string escapedFileName = escapeSpecialCharacters(fileName);
@@ -85,41 +87,50 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
 
     string artist = "Unknown_Artist";
     string album = "Unknown_Album";
-    string title = "Unknown_Title";
+    string title = fileName;
     int disc = 1;
     int track = 1;
-    string genre = "Unknown_Genre";
+    string genre = "Unknown Genre";
     string date = "Unknown_Date";
     string lyrics = "";
 
     // Log the metadata extraction process
-    ofstream logFile(debugFile, ios::trunc);
+    ofstream logFile(debugFile, ios::app);
     if (logFile.is_open()) {
         logFile << "Storing Metadata for: " << fileName << endl;
+        logFile << "Inode: " << inode << endl;
 
-        if (metadata["format"]["tags"].contains("artist")) {
-            artist = metadata["format"]["tags"]["artist"].get<string>();
+        if (metadata["format"]["tags"].contains("artist") || metadata["format"]["tags"].contains("ARTIST")) {
+            artist = metadata["format"]["tags"].contains("artist") ? 
+                     metadata["format"]["tags"]["artist"].get<string>() : 
+                     metadata["format"]["tags"]["ARTIST"].get<string>();
             logFile << "Artist: extracted successfully +" << endl;
         } else {
             logFile << "Artist: extraction failed -" << endl;
         }
 
-        if (metadata["format"]["tags"].contains("album")) {
-            album = metadata["format"]["tags"]["album"].get<string>();
+        if (metadata["format"]["tags"].contains("album") || metadata["format"]["tags"].contains("ALBUM")) {
+            album = metadata["format"]["tags"].contains("album") ? 
+                    metadata["format"]["tags"]["album"].get<string>() : 
+                    metadata["format"]["tags"]["ALBUM"].get<string>();
             logFile << "Album: extracted successfully +" << endl;
         } else {
             logFile << "Album: extraction failed -" << endl;
         }
 
-        if (metadata["format"]["tags"].contains("title")) {
-            title = metadata["format"]["tags"]["title"].get<string>();
+        if (metadata["format"]["tags"].contains("title") || metadata["format"]["tags"].contains("TITLE")) {
+            title = metadata["format"]["tags"].contains("title") ? 
+                    metadata["format"]["tags"]["title"].get<string>() : 
+                    metadata["format"]["tags"]["TITLE"].get<string>();
             logFile << "Title: extracted successfully +" << endl;
         } else {
             logFile << "Title: extraction failed -" << endl;
         }
 
-        if (metadata["format"]["tags"].contains("disc")) {
-            string discStr = metadata["format"]["tags"]["disc"].get<string>();
+        if (metadata["format"]["tags"].contains("disc") || metadata["format"]["tags"].contains("DISC")) {
+            string discStr = metadata["format"]["tags"].contains("disc") ? 
+                             metadata["format"]["tags"]["disc"].get<string>() : 
+                             metadata["format"]["tags"]["DISC"].get<string>();
             try {
                 disc = std::stoi(discStr);
                 logFile << "Disc: extracted successfully +" << endl;
@@ -130,8 +141,10 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
             logFile << "Disc: extraction failed -" << endl;
         }
 
-        if (metadata["format"]["tags"].contains("track")) {
-            string trackStr = metadata["format"]["tags"]["track"].get<string>();
+        if (metadata["format"]["tags"].contains("track") || metadata["format"]["tags"].contains("TRACK")) {
+            string trackStr = metadata["format"]["tags"].contains("track") ? 
+                              metadata["format"]["tags"]["track"].get<string>() : 
+                              metadata["format"]["tags"]["TRACK"].get<string>();
             try {
                 track = std::stoi(trackStr);
                 logFile << "Track: extracted successfully +" << endl;
@@ -142,22 +155,28 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
             logFile << "Track: extraction failed -" << endl;
         }
 
-        if (metadata["format"]["tags"].contains("genre")) {
-            genre = metadata["format"]["tags"]["genre"].get<string>();
+        if (metadata["format"]["tags"].contains("genre") || metadata["format"]["tags"].contains("GENRE")) {
+            genre = metadata["format"]["tags"].contains("genre") ? 
+                    metadata["format"]["tags"]["genre"].get<string>() : 
+                    metadata["format"]["tags"]["GENRE"].get<string>();
             logFile << "Genre: extracted successfully +" << endl;
         } else {
             logFile << "Genre: extraction failed -" << endl;
         }
 
-        if (metadata["format"]["tags"].contains("date")) {
-            date = metadata["format"]["tags"]["date"].get<string>();
+        if (metadata["format"]["tags"].contains("date") || metadata["format"]["tags"].contains("DATE")) {
+            date = metadata["format"]["tags"].contains("date") ? 
+                   metadata["format"]["tags"]["date"].get<string>() : 
+                   metadata["format"]["tags"]["DATE"].get<string>();
             logFile << "Date: extracted successfully +" << endl;
         } else {
             logFile << "Date: extraction failed -" << endl;
         }
 
-        if (metadata["format"]["tags"].contains("lyrics-XXX")) {
-            lyrics = metadata["format"]["tags"]["lyrics-XXX"].get<string>();
+        if (metadata["format"]["tags"].contains("lyrics-XXX") || metadata["format"]["tags"].contains("LYRICS-XXX")) {
+            lyrics = metadata["format"]["tags"].contains("lyrics-XXX") ? 
+                     metadata["format"]["tags"]["lyrics-XXX"].get<string>() : 
+                     metadata["format"]["tags"]["LYRICS-XXX"].get<string>();
             logFile << "Lyrics: extracted successfully +" << endl;
         } else {
             logFile << "Lyrics: extraction failed -" << endl;

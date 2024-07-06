@@ -52,7 +52,7 @@ void displayWindow(WINDOW* menu_win, const std::string window) {
     werase(menu_win);
     // set_menu_fore(menu_win, A_NORMAL);
     box(menu_win, 0, 0);
-    mvwprintw(menu_win, 0, 2, " HELP WIN: ");
+    wattron(menu_win, COLOR_PAIR(2));
     mvwprintw(menu_win, 2, 2, "p - Toggle playback");
     mvwprintw(menu_win, 3, 2, "Enter - Play selected song");
     mvwprintw(menu_win, 4, 2, "Right Arrow - Seek forward 5s");
@@ -70,11 +70,17 @@ void displayWindow(WINDOW* menu_win, const std::string window) {
     mvwprintw(menu_win, 16, 2, "m - Toggle mute");
     mvwprintw(menu_win, 17, 2, "/ - String search in focused window");
     mvwprintw(menu_win, 18, 2, "Tab - Toggle Focused Window");
+    wattroff(menu_win, COLOR_PAIR(2));
+
+    wattron(menu_win, COLOR_PAIR(3));
     mvwprintw(menu_win, 20, 2, "2 - To show help menu");
     mvwprintw(menu_win, 21, 2, "3 - Lyrics View");
     mvwprintw(menu_win, 22, 2, "4 - Session Details");
-init_pair(GREY_BACKGROUND_COLOR, COLOR_BLACK, COLOR_WHITE);  // Grey background and black text for title
+    wattroff(menu_win, COLOR_PAIR(3));
+
+    wattron(menu_win, COLOR_PAIR(4) | A_BOLD);
     mvwprintw(menu_win, 24, 2, "Press '1' to go back to the menu");
+    wattroff(menu_win, COLOR_PAIR(4) | A_BOLD);
     wrefresh(menu_win);
   }
   else if (window == "warning") {
@@ -101,7 +107,7 @@ init_pair(GREY_BACKGROUND_COLOR, COLOR_BLACK, COLOR_WHITE);  // Grey background 
   }
 }
 
-void ncursesWinLoop(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_win, WINDOW* song_menu_win, WINDOW* status_win, WINDOW* title_win, const char* title_content) {
+void ncursesWinLoop(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_win, WINDOW* song_menu_win, WINDOW* status_win, WINDOW* title_win, const char* title_content, bool showingArtMen) {
   ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "refresh");
   box(artist_menu_win, 0, 0);
   box(song_menu_win, 0, 0);
@@ -111,7 +117,7 @@ void ncursesWinLoop(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_win, W
   wbkgd(title_win, COLOR_PAIR(5) | A_BOLD);
   wattron(title_win, COLOR_PAIR(6));
   mvwprintw(title_win, 0, 1, title_content);  // Replace with your title
-  mvwprintw(artist_menu_win, 0, 2, " Artists: ");
+  showingArtMen ? mvwprintw(artist_menu_win, 0, 2, " Artists: ") : mvwprintw(artist_menu_win, 0, 2, " Help Window: ");
   mvwprintw(song_menu_win, 0, 2, " Songs: ");
   wattroff(title_win, COLOR_PAIR(5));
   wattroff(title_win, COLOR_PAIR(6));
@@ -223,7 +229,6 @@ bool showExitConfirmation(WINDOW* parent_win) {
     WINDOW* confirm_win = newwin(height, width, start_y, start_x);
     wattron(confirm_win, COLOR_PAIR(COLOR_BLUE));
     box(confirm_win, 0, 0);
-    mvwprintw(confirm_win, 0, 2, " !!! ");
     mvwprintw(confirm_win, 1, 20, "Exit LITEMUS?");
     mvwprintw(confirm_win, 4, 10, "Yes (Y/Q)                No (N/esc)");
 

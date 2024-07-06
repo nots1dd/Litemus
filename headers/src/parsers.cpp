@@ -147,13 +147,14 @@ std::string read_file_to_string(const std::string& path) {
 }
 
 void litemusHelper(const std::string& NC) {
-    std::cout << NC << "LiteMus - Light Music Player (lmus)" << std::endl
+    std::cout << NC << "LiteMus - Light Music Player based on ncurses" << std::endl
               << std::endl
-              << "Commands:" << std::endl << std::endl
-              << " run               Run Litemus" << std::endl
-              << " --help            Show this help dialog and exit" << std::endl
-              << " --remote-cache    Remotely cache songs (dir set in $HOME/.cache/litemus/songDirectory.txt)" << std::endl
-              << " --clear-cache     Remove the current chosen directory's cache" << std::endl
+              << "Usage: lmus [OPTIONS]" << std::endl << std::endl
+              << "   run               Run Litemus" << std::endl
+              << "   --help            Show this help dialog and exit" << std::endl
+              << "   --remote-cache    Remotely cache songs (dir set in $HOME/.cache/litemus/songDirectory.txt)" << std::endl
+              << "   --clear-cache     Remove the current chosen directory's cache" << std::endl
+              << std::endl << "Any bugs or issues check this repository https://github.com/nots1dd/Litemus"
               << std::endl;
 }
 

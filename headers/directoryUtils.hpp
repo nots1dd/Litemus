@@ -37,9 +37,20 @@ inline void changeDirectory(const string& path) {
     cout << GREEN << "[SUCCESS] Directory changed successfully." << "[ " << path << " ]" << RESET << endl;
 }
 
+// Function to check if a directory exists
 inline bool directory_exists(const char *dir_path) {
     struct stat sb;
     return stat(dir_path, &sb) == 0 && S_ISDIR(sb.st_mode);
+}
+
+// Function to delete a directory and its contents
+inline void deleteDirectory(const string& path) {
+    try {
+        filesystem::remove_all(path);
+        cout << GREEN << "[SUCCESS] Directory deleted successfully: " << path << RESET << endl;
+    } catch (const filesystem::filesystem_error& e) {
+        cerr << YELLOW << BOLD << "[ERROR] Failed to delete directory: " << path << " (" << e.what() << ")" << RESET << endl;
+    }
 }
 
 #endif // DIRECTORY_UTILS_HPP

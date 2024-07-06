@@ -1,0 +1,15 @@
+Change type: MAJOR
+
+Summary
+
+-> Integration of more audio formats done (.wav, .flac integrated for now)
+
+-> Lmus cache metadata extraction issues resolved
+
+-> debug.log file created with efficient showcase of all fields of metadata extraction
+
+-> Toggling of help window and session details window now is cleaner (focus toggles to songMenu), and pressing 1 focuses back to artistMenu with all artists
+
+-> Changing the title of the artists window to help window when switching to help win and session details
+
+-> Added a `build.sh` script that creates the `build/` directory, builds it, and finally addes the `lmus` alias to the respective shell rc

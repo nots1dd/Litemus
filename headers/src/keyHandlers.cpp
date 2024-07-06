@@ -206,15 +206,14 @@ void quitFunc(sf::Music& music, std::vector<std::string>& allArtists, std::vecto
   free_menu(artistMenu); 
 }
 
-void printSessionDetails(WINDOW* menu_win, const std::string& songsDirectory, int artistsSize, int songsSize) {
+void printSessionDetails(WINDOW* menu_win, const std::string& songsDirectory, const std::string& cacheDir, const std::string& cacheDebugFile, int artistsSize, int songsSize) {
   werase(menu_win);
   mvwprintw(menu_win, 2, 10, "LiteMus Session Details");
-  std::string dirStr = "Directory: " + songsDirectory;
-  mvwprintw(menu_win, 4, 4, dirStr.c_str());
   std::stringstream artStr;
-  artStr << "No of artists: " << artistsSize << std::endl << std::endl << "    No of songs: " << songsSize;
+  artStr << "Directory: " << songsDirectory << std::endl << std::endl << "    Cache Directory: " << cacheDir << std::endl << std::endl << "    Debug File: " << cacheDebugFile << std::endl
+ << std::endl << std::endl << "    No of artists: " << artistsSize << std::endl << std::endl << "    No of songs: " << songsSize;
   std::string newartStr = artStr.str();
-  mvwprintw(menu_win, 6, 4, newartStr.c_str());
+  mvwprintw(menu_win, 4, 4, newartStr.c_str());
   box(menu_win, 0, 0);
   wrefresh(menu_win);
 }
