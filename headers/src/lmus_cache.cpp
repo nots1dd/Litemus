@@ -67,8 +67,8 @@ string getFileNameFromInode(const string& inode) {
 string escapeSpecialCharacters(const string& fileName) {
     string escapedFileName;
     for (char c : fileName) {
-        if (c == '$' || c == '#') {
-            escapedFileName += '\\'; // Add a backslash before special characters
+        if (c == '\'') {
+            escapedFileName += "'\"'\"'"; // Add a backslash before special characters
         }
         escapedFileName += c;
     }
@@ -80,7 +80,7 @@ void storeMetadataJSON(const string& inode, const string& fileName, json& artist
     string escapedFileName = escapeSpecialCharacters(fileName);
 
     // Construct the ffprobe command with the escaped filename
-    string metadataCmd = "ffprobe -v quiet -print_format json -show_format \"" + escapedFileName + "\"";
+    string metadataCmd = "ffprobe -v quiet -print_format json -show_format '" + escapedFileName + "'";
     string metadataInfo = executeCommand(metadataCmd);
 
     auto metadata = json::parse(metadataInfo);
