@@ -2,6 +2,8 @@
 
 A fast and interactive console music player written in C++ for UNIX Systems.
 
+Supports any `.mp3`, `.wav` and `.flac` files! (with or without embedded metadata)
+
 ## Features
 
 ### Insanely Fast
@@ -59,12 +61,12 @@ This has only been tried and tested on Arch Linux 6.9 kernel (x86-64)
 
 This will generate a `./build/Litemus` executable. Run it to get the Litemus experience!
 
-> **Tip:**
+> <span style="color: green;"><strong>Tip:</strong></span>
 > 
-> A simpler way is to just use the `build.sh` script that does everything for you (including adding the `lmus` alias to your shell rc!)
+> <span style="color: white;">A simpler way is to just use the <code>build.sh</code> script that does everything for you (including adding the <code>lmus</code> alias to your shell rc!)</span>
 > 
-> NOTE: Run `chmod +x build.sh` in order for it to execute. ALWAYS BE CAREFUL OF WHAT YOU ARE EXECUTING!!
-> 
+> <span style="color: white;">NOTE: Run <code>chmod +x build.sh</code> in order for it to execute. ALWAYS BE CAREFUL OF WHAT YOU ARE EXECUTING!!</span>
+
 
 ## Installation
 

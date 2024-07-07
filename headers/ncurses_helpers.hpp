@@ -19,6 +19,6 @@ void printMultiLine(WINDOW* win, const std::vector<std::string>& lines, int star
 void ncursesMenuSetup(MENU* Menu, WINDOW* win, int menu_height, int menu_width, const char* type);
 void move_menu_down(MENU* artistMenu, MENU* songMenu, bool showingArtists);
 void move_menu_up(MENU* artistMenu, MENU* songMenu, bool showingArtists);
-ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles, std::vector<std::string>& songDurations);
+ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles, std::vector<std::string>& songDurations, std::vector<std::string>& albums, std::vector<std::string>& albumYears);
 
 #endif

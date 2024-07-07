@@ -37,11 +37,11 @@ std::vector<std::string> parseArtists(const std::string& artistsFile) {
 }
 
 
-std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>> listSongs(const std::string& cacheFile, const std::string& artistName, const std::string& songsDirectory) {
+std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<std::string>> listSongs(const std::string& cacheFile, const std::string& artistName, const std::string& songsDirectory) {
     std::ifstream file(cacheFile);
     if (!file.is_open()) {
         std::cerr << "Could not open cache file: " << cacheFile << std::endl;
-        return {{}, {}, {}};
+        return {{}, {}, {}, {}, {}};
     }
 
     json j;
@@ -49,12 +49,14 @@ std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::
         file >> j;
     } catch (const std::exception& e) {
         std::cerr << "Error parsing JSON: " << e.what() << std::endl;
-        return {{}, {}, {}};
+        return {{}, {}, {}, {}, {}};
     }
 
     std::vector<std::string> songTitles;
     std::vector<std::string> songPaths;
     std::vector<std::string> songDurations;
+    std::vector<std::string> Albums;
+    std::vector<std::string> albumYears;
 
     // Iterate over each artist
     for (auto it = j.begin(); it != j.end(); ++it) {
@@ -79,10 +81,13 @@ std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::
                             std::string songTitle = songInfo["title"].get<std::string>();
                             std::string songFilename = songInfo["filename"].get<std::string>();
                             std::string songPath = songsDirectory + songFilename;
+                            std::string albumYear = songInfo["date"].get<std::string>();
 
                             songTitles.push_back(songTitle);
                             songPaths.push_back(songPath);
                             songDurations.push_back(getSongDuration(songPath));
+                            Albums.push_back(albumName);
+                            albumYears.push_back(albumYear);
                         }
                     }
                 }
@@ -90,7 +95,7 @@ std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::
         }
     }
 
-    return {songTitles, songPaths, songDurations};
+    return {songTitles, songPaths, songDurations, Albums, albumYears};
 }
 
 std::pair<std::string, std::string> findCurrentGenreArtist(const std::string& cacheFile, const std::string& currentSong, std::string& currentLyrics) {

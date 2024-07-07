@@ -25,6 +25,7 @@ void handleKeyEvent_tab(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_wi
       highlightFocusedWindow(artistMenu, true);
       highlightFocusedWindow(songMenu, false);
       wrefresh(artist_menu_win);
+      set_menu_fore(songMenu, COLOR_PAIR(COLOR_YELLOW));
   } else {
       // Switch focus to song menu
       ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width, "song");
@@ -35,6 +36,7 @@ void handleKeyEvent_tab(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_wi
       highlightFocusedWindow(artistMenu, false);
       highlightFocusedWindow(songMenu, true);
       wrefresh(song_menu_win);
+      set_menu_fore(artistMenu, COLOR_PAIR(COLOR_YELLOW));
   }
 }
 

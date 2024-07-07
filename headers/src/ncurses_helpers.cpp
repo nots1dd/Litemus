@@ -23,6 +23,7 @@ void ncursesSetup() {
     init_pair(COLOR_BLUE, COLOR_BLUE, COLOR_BLACK);
     init_pair(GREY_BACKGROUND_COLOR, COLOR_WHITE, GREY_BACKGROUND_COLOR);
     init_pair(LIGHT_GREEN_COLOR, COLOR_GREEN, COLOR_BLACK);
+    init_pair(7, COLOR_YELLOW, COLOR_BLACK);
 }
 
 void ncursesWinControl(WINDOW* artist_menu_win, WINDOW* song_menu_win, WINDOW* status_win, WINDOW* title_win, const std::string& choice) {
@@ -282,8 +283,12 @@ void move_menu_down(MENU* artistMenu, MENU* songMenu, bool showingArtists) {
             scale_menu(artistMenu, &rows, &cols);
             lastVisibleItem = topRow + rows - 4;
         } else {
-            werase(menu_win(artistMenu));
-            menu_driver(artistMenu, REQ_DOWN_ITEM);
+            do {
+                werase(menu_win(artistMenu));
+                menu_driver(artistMenu, REQ_DOWN_ITEM);
+                curItem = current_item(artistMenu);
+                currentIndex = item_index(curItem);
+            } while (currentIndex < itemCount - 1 && !(item_opts(curItem) & O_SELECTABLE));
         }
     } else {
         int itemCount = item_count(songMenu);
@@ -302,33 +307,45 @@ void move_menu_down(MENU* artistMenu, MENU* songMenu, bool showingArtists) {
             scale_menu(songMenu, &rows, &cols);
             lastVisibleItem = topRow + rows - 4;
         } else {
-          if (currentIndex < itemCount - 1) {
-            werase(menu_win(songMenu));
-            menu_driver(songMenu, REQ_DOWN_ITEM);
-          }
+            if (currentIndex < itemCount - 1) {
+                do {
+                    werase(menu_win(songMenu));
+                    menu_driver(songMenu, REQ_DOWN_ITEM);
+                    curItem = current_item(songMenu);
+                    currentIndex = item_index(curItem);
+                } while (currentIndex < itemCount - 1 && !(item_opts(curItem) & O_SELECTABLE));
+            }
         }
     }
 }
 
 void move_menu_up(MENU* artistMenu, MENU* songMenu, bool showingArtists) {
-  if (showingArtists) {
-      ITEM* curItem = current_item(artistMenu);
-      int currentIndex = item_index(curItem);
-      if (currentIndex > 0) {
-          werase(menu_win(artistMenu));
-          menu_driver(artistMenu, REQ_UP_ITEM);
-      }
-  } else {
-      ITEM* curItem = current_item(songMenu);
-      int currentIndex = item_index(curItem);
-      if (currentIndex > 0) {
-          werase(menu_win(songMenu));
-          menu_driver(songMenu, REQ_UP_ITEM);
-      }
-  }
+    if (showingArtists) {
+        ITEM* curItem = current_item(artistMenu);
+        int currentIndex = item_index(curItem);
+        if (currentIndex > 0) {
+            do {
+                werase(menu_win(artistMenu));
+                menu_driver(artistMenu, REQ_UP_ITEM);
+                curItem = current_item(artistMenu);
+                currentIndex = item_index(curItem);
+            } while (currentIndex > 0 && !(item_opts(curItem) & O_SELECTABLE));
+        }
+    } else {
+        ITEM* curItem = current_item(songMenu);
+        int currentIndex = item_index(curItem);
+        if (currentIndex > 1) {
+            do {
+                werase(menu_win(songMenu));
+                menu_driver(songMenu, REQ_UP_ITEM);
+                curItem = current_item(songMenu);
+                currentIndex = item_index(curItem);
+            } while (currentIndex > 1 && !(item_opts(curItem) & O_SELECTABLE));
+        }
+    }
 }
 
-ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles, std::vector<std::string>& songDurations) {
+ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists, std::vector<std::string>& songTitles, std::vector<std::string>& songDurations, std::vector<std::string>& albumNames, std::vector<std::string>& albumYears) {
   if (name == "artist") {
     ITEM** artistItems = new ITEM*[allArtists.size() + 1];
     for (size_t i = 0; i < allArtists.size(); ++i) {
@@ -338,11 +355,28 @@ ITEM** createItems(const std::string& name, std::vector<std::string>& allArtists
     return artistItems;
   }
   else if (name == "song") {
-    ITEM** songItems = new ITEM*[songTitles.size() + 1];
-    for (size_t i = 0; i < songTitles.size(); ++i) {
-        songItems[i] = new_item(strdup(songTitles[i].c_str()), "");
-  }
-    songItems[songTitles.size()] = nullptr;
+    std::map<std::string, std::vector<std::string>> songsByAlbum;
+    for (size_t i = 0; i < albumNames.size(); ++i) {
+        std::string albumKey = albumNames[i] + " (" + albumYears[i].substr(0,4) + ")";
+        songsByAlbum[albumKey].push_back(songTitles[i]);
+    }
+
+    std::vector<std::string> newMenuItems;
+    for (const auto& [album, songs] : songsByAlbum) {
+        newMenuItems.push_back(album); // Non-selectable title
+        for (const auto& song : songs) {
+            newMenuItems.push_back("  " + song); // Selectable songs
+        }
+    }
+
+    ITEM** songItems = new ITEM*[newMenuItems.size() + 1];
+    for (size_t i = 0; i < newMenuItems.size(); ++i) {
+        songItems[i] = new_item(strdup(newMenuItems[i].c_str()), "");
+        if (newMenuItems[i].find("  ") != 0) { // Non-selectable if not a song (album title)
+            item_opts_off(songItems[i], O_SELECTABLE);
+        }
+    }
+    songItems[newMenuItems.size()] = nullptr;
     return songItems;
   }
 }

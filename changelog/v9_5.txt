@@ -1,0 +1,11 @@
+Change type: MAJOR
+
+Summary
+
+-> Prettification of songMenu TUI is done (songs are now shown by album and release year based on metadata)
+
+-> When toggling windows, the menu_fore is set for the selected item (like cmus)
+
+-> Will merge PR to avoid exploitation of execute command and escape Special chars functions
+
+-> Refactored some code

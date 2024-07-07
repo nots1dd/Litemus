@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
     int songsSize = allInodes.size();
     std::vector<std::string> allArtists = parseArtists(cacheArtistDirectory);
     int artistsSize = allArtists.size();
-    auto [songCrudeTitles, songPaths, songDurations] = listSongs(cacheDirectory, allArtists[0], songsDirectory); // default to the first artist
+    auto [songCrudeTitles, songPaths, songDurations, songAlbums, albumYears] = listSongs(cacheDirectory, allArtists[0], songsDirectory); // default to the first artist
     size_t maxTitleLength = getMaxSongTitleLength(songCrudeTitles, songDurations);
     auto songTitles = getTitlesWithWhiteSpaces(songCrudeTitles, songDurations, maxTitleLength);
     // Check if songs are found
@@ -93,11 +93,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Initialize artist menu
-    ITEM** artistItems = createItems("artist", allArtists, songTitles, songDurations);
+    ITEM** artistItems = createItems("artist", allArtists, songTitles, songDurations, songAlbums, albumYears);
     MENU* artistMenu = new_menu(artistItems);
 
     // Initialize song menu 
-    ITEM** songItems = createItems("song", allArtists, songTitles, songDurations);
+    ITEM** songItems = createItems("song", allArtists, songTitles, songDurations, songAlbums, albumYears);
     MENU* songMenu = new_menu(songItems);
     songTitles = songCrudeTitles;
 
@@ -119,6 +119,8 @@ int main(int argc, char* argv[]) {
 
     set_menu_format(artistMenu, menu_height, 0);
     set_menu_format(songMenu, menu_height, 0);
+
+    set_current_item(songMenu, songItems[1]);
 
     ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "box");
 
@@ -142,6 +144,7 @@ int main(int argc, char* argv[]) {
     bool showingLyrics = false;
     bool isMuted = false;
     bool updateSongMenu = false;
+    bool updateStatusMetadata = false;
     bool showingartMen = true;
 
     highlightFocusedWindow(artistMenu, true);
@@ -195,29 +198,36 @@ int main(int argc, char* argv[]) {
                   }
                   break;
                 }
+                
                 case 10:  // Enter key
                     if (!showingArtists) {
                         // Play selected song from song menu
                         ITEM* curItem = current_item(songMenu);
-                        int selectedIndex = item_index(curItem); 
-                        post_menu(songMenu);
-                        post_menu(artistMenu);
-                        box(song_menu_win, 0, 0);
-                        highlightFocusedWindow(artistMenu, showingArtists);  // Highlight the artist menu when switching focus
-                        mvwprintw(song_menu_win, 0, 2, " Songs: ");
-                        wrefresh(song_menu_win);
-                        if (selectedIndex >= 0 && selectedIndex < songPaths.size()) {
-                            currentSongIndex = selectedIndex;
-                            playMusic(music, songPaths[currentSongIndex]);
-                            currentSong = songTitles[currentSongIndex];
-                            auto resultGA = findCurrentGenreArtist(cacheDirectory, currentSong, currentLyrics);
-                            currentGenre = resultGA.first;
-                              currentArtist = resultGA.second;
-                              updateStatusBar(status_win, currentSong, currentArtist, currentGenre,  music, firstEnterPressed, showingLyrics);                          
-                          }
-                          firstEnterPressed = true;
-                      }
-                      break;
+                        int selectedIndex = item_index(curItem);
+
+                        // Find the actual playable index (skip over non-selectable items)
+                        int playableIndex = -1;
+                        int actualIndex = 0;
+
+                        while (actualIndex <= selectedIndex) {
+                            if (item_opts(songItems[actualIndex]) & O_SELECTABLE) {
+                                if (playableIndex == selectedIndex) {
+                                    break; // Found the actual playable item
+                                }
+                                playableIndex++;
+                            }
+                            actualIndex++;
+                        }
+
+                        // Check if the selected index is within bounds and playable
+                        if (playableIndex < songPaths.size()) {
+                            currentSongIndex = playableIndex;
+                            updateStatusMetadata = true;
+                            playMusic(music, songPaths[currentSongIndex]); 
+                        }
+                        firstEnterPressed = true;
+                    }
+                    break;
                      case 'p':  // Pause/play music
                           if (music.getStatus() == sf::Music::Paused) {
                               music.play();
@@ -248,21 +258,13 @@ int main(int argc, char* argv[]) {
                       case 'n':  // Next song
                           if (firstEnterPressed) {
                           nextSong(music, songPaths, currentSongIndex);
-                          currentSong = songTitles[currentSongIndex];
-                          auto resultGA = findCurrentGenreArtist(cacheDirectory, currentSong, currentLyrics);
-                          currentGenre = resultGA.first;
-                          currentArtist = resultGA.second;
-                          updateStatusBar(status_win, currentSong, currentArtist, currentGenre,  music, firstEnterPressed, showingLyrics);
+                          updateStatusMetadata = true; 
                         }
                       break;
                   case 'b':  // Previous song
                       if (firstEnterPressed) {
                         previousSong(music, songPaths, currentSongIndex);
-                        currentSong = songTitles[currentSongIndex];
-                        auto resultGA = findCurrentGenreArtist(cacheDirectory, currentSong, currentLyrics);
-                        currentGenre = resultGA.first;
-                        currentArtist = resultGA.second;
-                        updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
+                        updateStatusMetadata = true; 
                     }
                     break;
                 case '2':  // Display help window
@@ -317,39 +319,79 @@ int main(int argc, char* argv[]) {
             }
         }
 
+                  
         if (updateSongMenu) {
-          ITEM* artItem = current_item(artistMenu);
-          int artselectedIndex = item_index(artItem); 
-          post_menu(artistMenu);
-          post_menu(songMenu);
-          box(menu_win(artistMenu), 0, 0);
-          const char* selectedArtist = allArtists[artselectedIndex].c_str();
+            ITEM* artItem = current_item(artistMenu);
+            int artselectedIndex = item_index(artItem);
+            post_menu(artistMenu);
+            post_menu(songMenu);
+            box(menu_win(artistMenu), 0, 0);
+            const char* selectedArtist = allArtists[artselectedIndex].c_str();
 
-          // Update song menu with songs of the selected artist
-          auto [newCrudeSongTitles, newSongPaths, newSongDurations] = listSongs(cacheDirectory, selectedArtist, songsDirectory);
-          size_t maxTitleLength = getMaxSongTitleLength(newCrudeSongTitles, newSongDurations);
-          auto newSongTitles = getTitlesWithWhiteSpaces(newCrudeSongTitles, newSongDurations, maxTitleLength);
-          for (size_t i = 0; i < songTitles.size(); ++i) {
-              free_item(songItems[i]);
-          }
-          free_menu(songMenu);
-          werase(menu_win(songMenu)); 
-          songItems = new ITEM*[newSongTitles.size() + 1];
-          for (size_t i = 0; i < newSongTitles.size(); ++i) {  
-              songItems[i] = new_item(strdup(newSongTitles[i].c_str()), "");
-          }
-          songItems[newSongTitles.size()] = nullptr;
-          songMenu = new_menu(songItems);
-          ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width, "song"); 
-          set_menu_format(songMenu, menu_height, 0);
-          set_menu_fore(songMenu, A_NORMAL);
-          post_menu(songMenu);
+            // Update song menu with songs of the selected artist
+            auto [newCrudeSongTitles, newSongPaths, newSongDurations, albumNames, albumYears] = listSongs(cacheDirectory, selectedArtist, songsDirectory);
+            size_t newMaxTitleLength = getMaxSongTitleLength(newCrudeSongTitles, newSongDurations);
+            auto newSongTitles = getTitlesWithWhiteSpaces(newCrudeSongTitles, newSongDurations, newMaxTitleLength);
+            // Group songs by album and release year
+            std::map<std::string, std::vector<std::string>> songsByAlbum;
+            for (size_t i = 0; i < albumNames.size(); ++i) {
+                std::string albumKey = albumNames[i] + " (" + albumYears[i].substr(0,4) + ")";
+                songsByAlbum[albumKey].push_back(newSongTitles[i]);
+            }
 
-          songTitles = newCrudeSongTitles;
-          songPaths = newSongPaths;
-          songDurations = newSongDurations;
-          wrefresh(menu_win(artistMenu));
-          wrefresh(menu_win(songMenu));
+            // Prepare new menu items
+            std::vector<std::string> newMenuItems;
+            for (const auto& [album, songs] : songsByAlbum) {
+                newMenuItems.push_back(album); // Non-selectable title
+                for (const auto& song : songs) {
+                    newMenuItems.push_back("  " + song); // Selectable songs
+                }
+            }
+
+            // Clean up old menu items
+            for (size_t i = 0; i < songTitles.size(); ++i) {
+                free_item(songItems[i]);
+            }
+            free_menu(songMenu);
+            werase(menu_win(songMenu));
+
+            // Create new menu items
+            songItems = new ITEM*[newMenuItems.size() + 1];
+            for (size_t i = 0; i < newMenuItems.size(); ++i) {
+                songItems[i] = new_item(strdup(newMenuItems[i].c_str()), "");
+                if (newMenuItems[i].find("  ") != 0) { // Non-selectable if not a song (album title)
+                    item_opts_off(songItems[i], O_SELECTABLE);
+                }
+            }
+            songItems[newMenuItems.size()] = nullptr;
+
+            // Recreate the menu
+            songMenu = new_menu(songItems);
+            ncursesMenuSetup(songMenu, song_menu_win, menu_height, menu_width, "song");
+            set_menu_format(songMenu, menu_height, 1); // Set the menu format to display items correctly
+            set_menu_fore(songMenu, A_REVERSE);
+            post_menu(songMenu);
+
+            // Update the song details
+            songTitles = newCrudeSongTitles;
+            songPaths = newSongPaths;
+            songDurations = newSongDurations;
+
+            // Refresh the windows
+            wrefresh(menu_win(artistMenu));
+            wrefresh(menu_win(songMenu));
+
+            set_current_item(songMenu, songItems[1]); // the 0th item is always an album name
+            set_menu_fore(songMenu, COLOR_PAIR(COLOR_BLUE));
+        }
+
+        if (updateStatusMetadata) {
+          currentSong = songTitles[currentSongIndex];
+          auto resultGA = findCurrentGenreArtist(cacheDirectory, currentSong, currentLyrics);
+          currentGenre = resultGA.first;
+          currentArtist = resultGA.second;
+          updateStatusBar(status_win, currentSong, currentArtist, currentGenre,  music, firstEnterPressed, showingLyrics);
+          updateStatusMetadata = false;
         }
 
         // Handle song transition when current song ends

@@ -11,7 +11,7 @@
 #include <nlohmann/json.hpp>
 
 std::vector<std::string> parseArtists(const std::string& artistsFile);
-std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>> listSongs(const std::string& cacheFile, const std::string& artistName, const std::string& songsDirectory); 
+std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<std::string>> listSongs(const std::string& cacheFile, const std::string& artistName, const std::string& songsDirectory); 
 std::pair<std::string, std::string> findCurrentGenreArtist(const std::string& cacheFile, const std::string& currentSong, std::string& currentLyrics);
 std::vector<std::string> splitStringByNewlines(const std::string& str);
 std::string get_home_directory();
