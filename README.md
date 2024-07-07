@@ -18,6 +18,8 @@ Supports any `.mp3`, `.wav` and `.flac` files! (with or without embedded metadat
 
 * Dynamic Scrolling, string search, clean status bar and more!
 
+* Showcases songs sorted by artist, then albums with release years and other metadata in a clean manner
+
 ### Smooth Audio
 
 * SFML for the audio API for smooth audio quality and features
@@ -32,10 +34,9 @@ Supports any `.mp3`, `.wav` and `.flac` files! (with or without embedded metadat
 
 ## Demo
 
-[![Demo Video](https://github.com/nots1dd/Litemus/assets/140317709/cce9fc82-14f5-4983-bfa8-a5b714d20910)](https://github.com/nots1dd/Litemus/assets/140317709/cce9fc82-14f5-4983-bfa8-a5b714d20910)
+https://github.com/nots1dd/Litemus/assets/140317709/253cc58f-7034-46ae-9020-5881612d36da
 
-![lmusPic1](https://github.com/nots1dd/Litemus/assets/140317709/736e6e8f-af47-4102-9365-187c7ac0f176)
-![lmusPic2](https://github.com/nots1dd/Litemus/assets/140317709/a87f3118-ec39-470f-8cd6-06287a4a37dc)
+For pictures on the working application, check the `misc/pictures` folder
 
 
 ## Pre-Requisites
