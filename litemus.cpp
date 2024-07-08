@@ -28,10 +28,6 @@ const string BLD = "\033[1m";
 
 
 const char* title_content = "  LITEMUS - Light Music player                                                                                                                                                                               ";
-int menu_height = 44;
-int menu_width = 90;
-int title_height = 2; 
-int title_width = 208;
 
 char* strdup(const char* s) {
     size_t len = strlen(s);
@@ -73,6 +69,8 @@ int main(int argc, char* argv[]) {
     std::string songsDirectory = read_file_to_string(songDirCache);
     lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache, cacheDebugFile);     
     ncursesSetup();
+    int menu_height, menu_width, title_height, title_width;
+    updateWindowDimensions(menu_height, menu_width, title_height, title_width);
 
     // Cache directory and song information
     std::vector<std::string> allInodes = loadPreviousInodes(cacheInfoFile);
@@ -109,7 +107,7 @@ int main(int argc, char* argv[]) {
     wrefresh(title_win);
 
     WINDOW* artist_menu_win = newwin(menu_height, menu_width, 1, 0);
-    WINDOW* song_menu_win = newwin(menu_height, menu_width + 29, 1, menu_width);
+    WINDOW* song_menu_win = newwin(menu_height, menu_width, 1, menu_width);
     WINDOW* status_win = newwin(10, 300, LINES - 2, 0);
 
     // Set menus to their respective windows
@@ -402,6 +400,23 @@ int main(int argc, char* argv[]) {
             currentGenre = resultGA.first;
             currentArtist = resultGA.second;
             updateStatusBar(status_win, currentSong, currentArtist, currentGenre, music, firstEnterPressed, showingLyrics);
+        }
+
+        if (is_term_resized(LINES, COLS)) {
+                clear();
+                refresh();
+                updateWindowDimensions(menu_height, menu_width, title_height, title_width);
+
+                wresize(title_win, title_height, title_width);
+                mvwin(title_win, 0, 0);
+                wresize(artist_menu_win, menu_height, menu_width);
+                wresize(song_menu_win, menu_height, menu_width);
+                mvwin(song_menu_win, 1, menu_width);
+                wresize(status_win, 10, title_width);
+                mvwin(status_win, menu_height + 2, 0);
+
+                ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "box");
+                ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "refresh");
         }
 
         // Update status bar and refresh windows

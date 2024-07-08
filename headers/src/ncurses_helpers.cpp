@@ -26,6 +26,17 @@ void ncursesSetup() {
     init_pair(7, COLOR_YELLOW, COLOR_BLACK);
 }
 
+void updateWindowDimensions(int& menu_height, int& menu_width, int& title_height, int& title_width) {
+    int max_y, max_x;
+    getmaxyx(stdscr, max_y, max_x);
+
+    title_height = 2;
+    title_width = max_x;
+
+    menu_height = max_y - 2;  // Leave space for the status window
+    menu_width = (max_x / 2);    // Split the screen in half for two menus
+}
+
 void ncursesWinControl(WINDOW* artist_menu_win, WINDOW* song_menu_win, WINDOW* status_win, WINDOW* title_win, const std::string& choice) {
   // Refresh all windows
   if (choice == "refresh") {

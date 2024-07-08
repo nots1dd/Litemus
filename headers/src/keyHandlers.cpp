@@ -46,8 +46,8 @@ void handleKeyEvent_slash(MENU* artistMenu, MENU* songMenu, bool showingArtists)
   getmaxyx(stdscr, y, x); // get the screen dimensions
   int input_width = 40; // adjust this to your liking
   int input_height = 3;
-  int input_x = x / 3; // center the input field
-  int input_y = y / 2; // center the input field
+  int input_y = (LINES - input_height) / 2;
+  int input_x = (COLS - input_width) / 2;
 
   // create a window for the input field
   WINDOW *input_win = newwin(input_height, input_width, input_y, input_x);
@@ -136,8 +136,8 @@ void displayLyricsWindow(WINDOW *artist_menu_win, std::string& currentLyrics, st
     getmaxyx(stdscr, y, x); // get the screen dimensions
     int warning_width = 75; // adjust this to your liking
     int warning_height = 15;
-    int warning_x = x / 2; // center the input field
-    int warning_y = y / 2; // center the input field
+    int warning_y = (LINES - warning_height) / 2;
+    int warning_x = (COLS - warning_width) / 2 + 10;
 
     WINDOW *warning_win = newwin(warning_height, warning_width, warning_y, warning_x);
     displayWindow(warning_win, "warning");
