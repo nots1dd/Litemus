@@ -77,9 +77,9 @@ If you encounter any issues with building Litemus from this repository in any di
 
 > **Tip:**
 > 
-> It is advised that you run Litemus in a full window at all times 
+> LiteMus can only dynamically window based on the initial window sizes 
 > 
-> This application still lacks dynamic windowing
+> Hence, it is noted that it still lacks some major dynamic resizing issues
 > 
 > BEST RESULTS are seen on: 1920x1080 screen size 
 

@@ -67,20 +67,22 @@ string getFileNameFromInode(const string& inode) {
 string escapeSpecialCharacters(const string& fileName) {
     string escapedFileName;
     for (char c : fileName) {
-        if (c == '\'') {
-            escapedFileName += "'\"'\"'"; // Add a backslash before special characters
+        if (c == '$' || c == '#') {
+            escapedFileName += '\\'; // Add a backslash before special characters
         }
         escapedFileName += c;
     }
     return escapedFileName;
 }
 
+
+
 void storeMetadataJSON(const string& inode, const string& fileName, json& artistsArray, vector<SongMetadata>& songMetadata, const string debugFile) {
     // Escape special characters in the filename
     string escapedFileName = escapeSpecialCharacters(fileName);
 
     // Construct the ffprobe command with the escaped filename
-    string metadataCmd = "ffprobe -v quiet -print_format json -show_format '" + escapedFileName + "'";
+    string metadataCmd = "ffprobe -v quiet -print_format json -show_format \"" + escapedFileName + "\"";
     string metadataInfo = executeCommand(metadataCmd);
 
     auto metadata = json::parse(metadataInfo);

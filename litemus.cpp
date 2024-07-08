@@ -287,6 +287,7 @@ int main(int argc, char* argv[]) {
                     werase(artist_menu_win);
                     ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width, "artist");
                     set_menu_format(artistMenu, menu_height, 0);
+                    set_menu_fore(artistMenu, COLOR_PAIR(COLOR_YELLOW));
                     post_menu(artistMenu);
                     highlightFocusedWindow(artistMenu, showingArtists);
                     showingLyrics = false;
