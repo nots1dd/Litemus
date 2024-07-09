@@ -59,6 +59,8 @@ This has only been tried and tested on Arch Linux 6.9 kernel (x86-64)
 
 ### Steps:
 
+#### Building with CMAKE:
+
 If you want to do this the hard way (without `build.sh`):
 
 1. Clone this repository: `https://github.com/nots1dd/Litemus.git`
@@ -68,6 +70,16 @@ If you want to do this the hard way (without `build.sh`):
 5. If the build is successful, copy `keybinds.json` to `$HOME/.config/litemus/` directory (create it if needed)
 
 This will generate a `./build/Litemus` executable and will be able to read your custom keybinds. Run it to get the Litemus experience!
+
+#### Building with MAKE:
+
+If for some reason you do not like or have cmake, there is a `Makefile` for this project
+
+-> In the current directory run: `make` (`sudo make` should NOT be necessary)
+
+This should compile all the files and link them to a `Litemus` executable. Simply run it!
+
+-> To clean up, run: `make clean`
 
 > <span style="color: green;"><strong>Tip:</strong></span>
 > 
