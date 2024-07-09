@@ -28,6 +28,6 @@ void printArtists(const json& artistsArray);
 void storeSongCountAndInodes(const string& infoDirectory, int songCount, const vector<string>& inodes, const vector<string>& songNames, const json& songsInfoArray);
 void storeSongsJSON(const string& filePath, const vector<string>& songNames);
 bool compareInodeVectors(const vector<string>& vec1, const vector<string>& vec2);
-int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const std::string cacheLitemusDirectory, const std::string cacheInfoDirectory, const std::string songCacheInfoFile, const std::string artistsFilePath, const std::string songDirPathCache, const std::string debugFile);
+int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const std::string cacheLitemusDirectory, const std::string configLitemusDirectory, const std::string cacheInfoDirectory, const std::string songCacheInfoFile, const std::string artistsFilePath, const std::string songDirPathCache, const std::string debugFile);
 
 #endif // MAIN_HPP

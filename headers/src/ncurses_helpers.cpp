@@ -59,41 +59,69 @@ void ncursesWinControl(WINDOW* artist_menu_win, WINDOW* song_menu_win, WINDOW* s
   }
 }
 
-void displayWindow(WINDOW* menu_win, const std::string window) {
+std::string asciiToChar(const std::unordered_map<std::string, int>& keybinds, const std::string& param) {
+    int t = keybinds.at(param);
+    std::string ans;
+    
+    if (t <= 126 && t > 0) {
+        switch (t) {
+            case 32:
+                ans = "Space";
+                break;
+            case 10:
+                ans = "Enter";
+                break;
+            case 9:
+                ans = "Tab";
+                break;
+            default:
+                ans = static_cast<char>(t);
+        }
+    } else {
+        ans = "Unknown Char";
+        endwin();
+        std::cout << "Invalid character in keybinds.json" << std::endl;
+        exit(EXIT_FAILURE);
+        return "Failed";
+    }
+    
+    return ans;
+}
+
+void displayWindow(WINDOW* menu_win, const std::string window, const std::unordered_map<std::string, int>& keybinds) {
   if (window == "help") {
     werase(menu_win);
-    // set_menu_fore(menu_win, A_NORMAL);
     box(menu_win, 0, 0);
-    wattron(menu_win, COLOR_PAIR(2));
-    mvwprintw(menu_win, 2, 2, "p - Toggle playback");
-    mvwprintw(menu_win, 3, 2, "Enter - Play selected song");
-    mvwprintw(menu_win, 4, 2, "Right Arrow - Seek forward 5s");
-    mvwprintw(menu_win, 5, 2, "Left Arrow - Seek backward 5s");
-    mvwprintw(menu_win, 6, 2, "f - Seek forward 60s");
-    mvwprintw(menu_win, 7, 2, "g - Seek backward 60s");
-    mvwprintw(menu_win, 8, 2, "r - Replay current song");
-    mvwprintw(menu_win, 9, 2, "j - Move up");
-    mvwprintw(menu_win, 10, 2, "k - Move down");
-    mvwprintw(menu_win, 11, 2, "q - Quit");
-    mvwprintw(menu_win, 12, 2, "n - Next Song");
-    mvwprintw(menu_win, 13, 2, "b - Previous Song");
-    mvwprintw(menu_win, 14, 2, "9 - Increase Volume");
-    mvwprintw(menu_win, 15, 2, "0 - Decrease Volume");
-    mvwprintw(menu_win, 16, 2, "m - Toggle mute");
-    mvwprintw(menu_win, 17, 2, "/ - String search in focused window");
-    mvwprintw(menu_win, 18, 2, "Tab - Toggle Focused Window");
-    wattroff(menu_win, COLOR_PAIR(2));
-
-    wattron(menu_win, COLOR_PAIR(3));
-    mvwprintw(menu_win, 20, 2, "2 - To show help menu");
-    mvwprintw(menu_win, 21, 2, "3 - Lyrics View");
-    mvwprintw(menu_win, 22, 2, "4 - Session Details");
+    std::stringstream ss;
+        ss << "Show Artist Menu    -- (" << asciiToChar(keybinds, "show_artists_menu") << ")" << std::endl;
+        ss << "    Toggle playback     -- (" << asciiToChar(keybinds, "toggle_playback") << ")" << std::endl;
+        ss << "    Play selected song  -- (" << asciiToChar(keybinds, "play_selected_song") << ")" << std::endl;
+        ss << "    Seek forward 5s     -- (" << asciiToChar(keybinds, "key_right") << ")" << std::endl;
+        ss << "    Seek backward 5s    -- (" << asciiToChar(keybinds, "key_left") << ")" << std::endl;
+        ss << "    Seek forward 60s    -- (" << asciiToChar(keybinds, "forward_seek_song_60s") << ")" << std::endl;
+        ss << "    Seek backward 60s   -- (" << asciiToChar(keybinds, "backward_seek_song_60s") << ")" << std::endl;
+        ss << "    Replay current song -- (" << asciiToChar(keybinds, "replay_current_song") << ")" << std::endl;
+        ss << "    Move up             -- (" << asciiToChar(keybinds, "key_down") << ")" << std::endl;
+        ss << "    Move down           -- (" << asciiToChar(keybinds, "key_up") << ")" << std::endl;
+        ss << "    Quit                -- (" << asciiToChar(keybinds, "quit") << ")" << std::endl;
+        ss << "    Force Quit          -- (" << asciiToChar(keybinds, "force_quit") << ")" << std::endl;
+        ss << "    Next Song           -- (" << asciiToChar(keybinds, "play_next_song") << ")" << std::endl;
+        ss << "    Previous Song       -- (" << asciiToChar(keybinds, "play_prev_song") << ")" << std::endl;
+        ss << "    Increase Volume     -- (" << asciiToChar(keybinds, "increase_volume") << ")" << std::endl;
+        ss << "    Decrease Volume     -- (" << asciiToChar(keybinds, "decrease_volume") << ")" << std::endl;
+        ss << "    Toggle mute         -- (" << asciiToChar(keybinds, "toggle_mute") << ")" << std::endl;
+        ss << "    String search       -- (" << asciiToChar(keybinds, "string_search") << ")" << std::endl;
+        ss << "    Toggle Window       -- (" << asciiToChar(keybinds, "toggle_window_focus") << ")" << std::endl;
+        ss << "    To show help menu   -- (" << asciiToChar(keybinds, "display_help_controls") << ")" << std::endl;
+        ss << "    Lyrics View         -- (" << asciiToChar(keybinds, "display_lyrics_view") << ")" << std::endl;
+        ss << "    Session Details     -- (" << asciiToChar(keybinds, "display_session_details") << ")" << std::endl << std::endl;
+        // ss << "    Show Artist Menu    -- (" << asciiToChar(keybinds, "show_artist_menu") << ")" << std::endl;
+    mvwprintw(menu_win, 2, 4, ss.str().c_str());
     wattroff(menu_win, COLOR_PAIR(3));
-
     wattron(menu_win, COLOR_PAIR(4) | A_BOLD);
-    mvwprintw(menu_win, 24, 2, "Press '1' to go back to the menu");
+    mvwprintw(menu_win, 26, 2, "To modify keybinds, check session details for keybinds.json file path!");
     wattroff(menu_win, COLOR_PAIR(4) | A_BOLD);
-    wrefresh(menu_win);
+    wrefresh(menu_win); 
   }
   else if (window == "warning") {
       wattron(menu_win, COLOR_PAIR(COLOR_RED));
@@ -294,12 +322,9 @@ void move_menu_down(MENU* artistMenu, MENU* songMenu, bool showingArtists) {
             scale_menu(artistMenu, &rows, &cols);
             lastVisibleItem = topRow + rows - 4;
         } else {
-            do {
-                werase(menu_win(artistMenu));
+              if (currentIndex <= itemCount - 1) {
                 menu_driver(artistMenu, REQ_DOWN_ITEM);
-                curItem = current_item(artistMenu);
-                currentIndex = item_index(curItem);
-            } while (currentIndex < itemCount - 1 && !(item_opts(curItem) & O_SELECTABLE));
+              }
         }
     } else {
         int itemCount = item_count(songMenu);

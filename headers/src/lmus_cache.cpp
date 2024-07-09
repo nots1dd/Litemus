@@ -338,7 +338,7 @@ void drawProgressBar(WINDOW* win, int y, int x, float progress) {
     wrefresh(win);
 }
 
-int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const std::string cacheLitemusDirectory, const std::string cacheInfoDirectory, const std::string songCacheInfoFile, const std::string artistsFilePath, const std::string songDirPathCache, const std::string debugFile) {
+int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const std::string cacheLitemusDirectory, const std::string configLitemusDirectory, const std::string cacheInfoDirectory, const std::string songCacheInfoFile, const std::string artistsFilePath, const std::string songDirPathCache, const std::string debugFile) {
 
     // DIRECTORY VARIABLES
     const string cacheDirectory = homeDir + "/.cache/"; 
@@ -346,6 +346,7 @@ int lmus_cache_main(std::string& songDirectory, const std::string homeDir, const
     changeDirectory(songDirectory);
     createDirectory(cacheDirectory);
     createDirectory(cacheLitemusDirectory);
+    createDirectory(configLitemusDirectory);
     createDirectory(cacheInfoDirectory);
 
     vector<string> inodes = getInodes();

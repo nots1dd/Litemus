@@ -27,4 +27,8 @@ cmake --build build/
 # Add alias to the appropriate shell rc file
 echo "alias lmus=$(pwd)/build/Litemus" >> "$RC_FILE"
 
+mkdir $HOME/.config/litemus/ >/dev/null
+
+cp keybinds.json $HOME/.config/litemus/
+
 echo -e "\n[SUCCESS] Alias added to $RC_FILE. Please restart your terminal or source the rc file to apply the changes."

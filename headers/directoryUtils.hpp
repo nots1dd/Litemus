@@ -16,6 +16,7 @@ extern const string RESET;
 extern const string GREEN;
 extern const string YELLOW;
 extern const string BOLD;
+extern const string BLUE;
 
 // Function to create a directory if it doesn't exist
 inline void createDirectory(const string& path) {

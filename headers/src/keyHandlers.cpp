@@ -2,6 +2,71 @@
 #include "../ncurses_helpers.hpp"
 #include "../parsers.hpp"
 #include "../sfml_helpers.hpp"
+#include "../directoryUtils.hpp"
+
+using json = nlohmann::json;
+
+std::string toLower(const std::string& str) {
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return result;
+}
+
+int translateKey(const std::string& key) {
+    std::string lowerkey = toLower(key);
+    if (lowerkey == "tab") return 9;
+    if (lowerkey == "enter") return 10;
+    if (lowerkey == "escape") return 27;
+    if (lowerkey == "right") return KEY_RIGHT;
+    if (lowerkey == "left") return KEY_LEFT;
+    if (key.length() == 1) return key[0]; // ASCII character
+    return -1; // Invalid key
+}
+
+void loadKeybinds(const std::string& filepath, std::unordered_map<std::string, int>& keybinds) {
+    std::ifstream keybindsFile(filepath);
+    if (!keybindsFile.is_open()) {
+        std::cerr << "Failed to open keybinds file: " << filepath << std::endl;
+        return;
+    }
+
+    std::cout << YELLOW << BOLD << "---------------------- KEYBINDS -- SETUP ----------------------" << RESET << std::endl;
+    std::cout << "Parsing keybinds from " << filepath << std::endl;
+
+    try {
+        json json;
+        keybindsFile >> json;
+
+        for (const auto& item : json.items()) {
+            std::string key = item.key();
+            std::string value = item.value().get<std::string>();
+            // Check if key is valid 
+            if (item.key().empty() || !item.value().is_string()) {
+                std::cerr << "Invalid key or value in keybinds file: " << filepath << std::endl;
+                std::cout << YELLOW << BOLD <<  "------------------ KEYBINDS -- SETUP -- END -------------------" << RESET << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            int translatedKey = translateKey(item.value().get<std::string>());
+            if (translatedKey == -1) {
+                std::cerr << "Invalid key value in keybinds file: " << filepath << std::endl;
+                std::cout << YELLOW << BOLD <<  "------------------ KEYBINDS -- SETUP -- END -------------------" << RESET << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            keybinds[item.key()] = translatedKey;
+        }
+    } catch (const json::parse_error& e) {
+        std::cerr << "JSON parse error in keybinds file " << filepath << ": " << e.what() << std::endl;
+        std::cout << YELLOW << BOLD <<  "------------------ KEYBINDS -- SETUP -- END -------------------" << RESET << std::endl;
+        exit(EXIT_FAILURE);
+    } catch (const std::exception& e) {
+        std::cerr << "Error loading keybinds file " << filepath << ": " << e.what() << std::endl;
+        std::cout << YELLOW << BOLD <<  "------------------ KEYBINDS -- SETUP -- END -------------------" << RESET << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::cout << GREEN << "[SUCCESS] All keybinds parsed without an issue." << RESET << std::endl;
+    std::cout << YELLOW << BOLD <<  "------------------ KEYBINDS -- SETUP -- END -------------------" << RESET << std::endl;
+}
 
 void handleKeyEvent_1(MENU* artistMenu, MENU* songMenu, WINDOW* artist_menu_win, bool showingArtists, int menu_height, int menu_width) {
   werase(artist_menu_win);
@@ -128,19 +193,19 @@ void handleKeyEvent_slash(MENU* artistMenu, MENU* songMenu, bool showingArtists)
 }
 
 
-void displayLyricsWindow(WINDOW *artist_menu_win, std::string& currentLyrics, std::string& currentSong, std::string& currentArtist, int menu_height, int menu_width, sf::Music &music, WINDOW *status_win, bool firstEnterPressed, bool showingLyrics, WINDOW *song_menu_win, MENU *songMenu, std::string& currentGenre, bool showingArtists) {
+void displayLyricsWindow(WINDOW *artist_menu_win, std::string& currentLyrics, std::string& currentSong, std::string& currentArtist, int menu_height, int menu_width, sf::Music &music, WINDOW *status_win, bool firstEnterPressed, bool showingLyrics, WINDOW *song_menu_win, MENU *songMenu, std::string& currentGenre, bool showingArtists, std::unordered_map<std::string, int>& keybinds) {
     mvwprintw(artist_menu_win, 0, 2, "  Lyrics: "); 
     wrefresh(artist_menu_win);
     werase(artist_menu_win); 
     int x, y;
     getmaxyx(stdscr, y, x); // get the screen dimensions
-    int warning_width = 75; // adjust this to your liking
-    int warning_height = 15;
+    int warning_width = x * 0.34; // adjust this to your liking
+    int warning_height = y * 0.38;
     int warning_y = (LINES - warning_height) / 2;
     int warning_x = (COLS - warning_width) / 2 + 10;
 
     WINDOW *warning_win = newwin(warning_height, warning_width, warning_y, warning_x);
-    displayWindow(warning_win, "warning");
+    displayWindow(warning_win, "warning", keybinds);
 
     WINDOW *lyrics_win = derwin(artist_menu_win, menu_height - 2, menu_width - 2, 1, 1);
     mvwprintw(artist_menu_win, 0, 2, " Lyrics: ");
@@ -190,7 +255,7 @@ void displayLyricsWindow(WINDOW *artist_menu_win, std::string& currentLyrics, st
         wrefresh(lyrics_win);
         mvwprintw(song_menu_win, 0, 2, " Songs: ");
         wrefresh(song_menu_win);
-        displayWindow(warning_win, "warning");
+        displayWindow(warning_win, "warning", keybinds);
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 }
@@ -208,11 +273,11 @@ void quitFunc(sf::Music& music, std::vector<std::string>& allArtists, std::vecto
   free_menu(artistMenu); 
 }
 
-void printSessionDetails(WINDOW* menu_win, const std::string& songsDirectory, const std::string& cacheDir, const std::string& cacheDebugFile, int artistsSize, int songsSize) {
+void printSessionDetails(WINDOW* menu_win, const std::string& songsDirectory, const std::string& cacheDir, const std::string& cacheDebugFile, const std::string& keybindsFilePath, int artistsSize, int songsSize) {
   werase(menu_win);
   mvwprintw(menu_win, 2, 10, "LiteMus Session Details");
   std::stringstream artStr;
-  artStr << "Directory: " << songsDirectory << std::endl << std::endl << "    Cache Directory: " << cacheDir << std::endl << std::endl << "    Debug File: " << cacheDebugFile << std::endl
+  artStr << "Directory: " << songsDirectory << std::endl << std::endl << "    Cache Directory: " << cacheDir << std::endl << std::endl << "    Debug File: " << cacheDebugFile << std::endl << std::endl << "    keybinds.json Path: " << keybindsFilePath << std::endl
  << std::endl << std::endl << "    No of artists: " << artistsSize << std::endl << std::endl << "    No of songs: " << songsSize;
   std::string newartStr = artStr.str();
   mvwprintw(menu_win, 4, 4, newartStr.c_str());

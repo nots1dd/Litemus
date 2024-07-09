@@ -163,6 +163,11 @@ void litemusHelper(const std::string& NC) {
               << std::endl;
 }
 
+void verboseQuit(const std::string& NC, const std::string& BLUE, const std::string& BOLD) {
+  cout << NC << "Menus unposted +" << endl << "Quit function invoked +" << endl << "Windows deleted successfully +" << endl << "Ncurses ended." << endl;
+  cout << BLUE << BOLD << "---------------------- LITEMUS -- SESSION -- END -------------------------" << endl;
+}
+
 size_t getMaxSongTitleLength(const std::vector<std::string>& songTitles, const std::vector<std::string>& songDurations) {
     size_t maxLength = 0;
     for (size_t i = 0; i < songTitles.size(); ++i) {

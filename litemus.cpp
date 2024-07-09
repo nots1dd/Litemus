@@ -14,12 +14,14 @@
 // Directory vars
 const std::string homeDir = get_home_directory();
 const std::string cacheLitemusDir = homeDir + "/.cache/litemus/";
+const std::string configLitemusDir = homeDir + "/.config/litemus/";
 const std::string cacheInfoDir = cacheLitemusDir + "info/";
 const std::string songDirCache = cacheLitemusDir + "songDirectory.txt";
 const std::string cacheDirectory = cacheInfoDir + "song_names.json";
 const std::string cacheInfoFile = cacheInfoDir + "song_cache_info.json";
 const std::string cacheArtistDirectory = cacheInfoDir + "artists.json";
 const std::string cacheDebugFile = cacheLitemusDir + "debug.log";
+const std::string keybindsFilePath = configLitemusDir + "keybinds.json";
 
 // ansi escape vals (colors)
 const string ERROR = "\033[31m";
@@ -45,7 +47,7 @@ int main(int argc, char* argv[]) {
     if (argc <= 2 && std::string(argv[1]) == "--remote-cache") {
         songDirMain(songDirCache, cacheLitemusDir);
         std::string songsDirectory = read_file_to_string(songDirCache);
-        lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache, cacheDebugFile);
+        lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, configLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache, cacheDebugFile);
         cout << endl << "Successfully cached the directory " << GREEN << songsDirectory << NC << endl << "Run `" << GREEN << "lmus run" << NC << "` to experience LiteMus!" << endl;
         return 0;
     }
@@ -67,10 +69,13 @@ int main(int argc, char* argv[]) {
     else if (argc == 2 && std::string(argv[1]) == "run") {
     songDirMain(songDirCache, cacheLitemusDir);
     std::string songsDirectory = read_file_to_string(songDirCache);
-    lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache, cacheDebugFile);     
-    ncursesSetup();
+    lmus_cache_main(songsDirectory, homeDir, cacheLitemusDir, configLitemusDir, cacheInfoDir, cacheInfoFile, cacheArtistDirectory, songDirCache, cacheDebugFile);
+    std::unordered_map<std::string, int> keybinds;
+    loadKeybinds(keybindsFilePath, keybinds);
+    cout << BLUE << BOLD << "--------------------- LITEMUS -- SESSION -- START ------------------------" << endl;
+    ncursesSetup(); 
     int menu_height, menu_width, title_height, title_width;
-    updateWindowDimensions(menu_height, menu_width, title_height, title_width);
+    updateWindowDimensions(menu_height, menu_width, title_height, title_width); // dynamic grab of terminal window's dimensions
 
     // Cache directory and song information
     std::vector<std::string> allInodes = loadPreviousInodes(cacheInfoFile);
@@ -147,176 +152,149 @@ int main(int argc, char* argv[]) {
 
     highlightFocusedWindow(artistMenu, true);
     highlightFocusedWindow(songMenu, false);
-    while (true) {
-        int ch = getch();
-        if (ch != ERR) {
-            switch (ch) {
-                case '1':
+    
+      while (true) {
+          int ch = getch();
+          if (ch != ERR) {
+              if (ch == keybinds["show_artists_menu"]) {
                   if (!showingArtists) {
-                    highlightFocusedWindow(artistMenu, true);
-                    highlightFocusedWindow(songMenu, false);
-                    showingArtists = !showingArtists;
+                      highlightFocusedWindow(artistMenu, true);
+                      highlightFocusedWindow(songMenu, false);
+                      showingArtists = !showingArtists;
                   }
                   showingartMen = true;
-                  handleKeyEvent_1(artistMenu, songMenu, artist_menu_win, showingArtists, menu_height, menu_width); 
-                  break;
-                case 9:  // Tab to switch between menus
-                    updateSongMenu = false;
-                    showingartMen = true;
-                    showingArtists = !showingArtists;
-                    handleKeyEvent_tab(artistMenu, songMenu, artist_menu_win, song_menu_win, showingArtists, menu_height, menu_width);
-                    break;
-                case KEY_DOWN:
-                case 'k': {
+                  handleKeyEvent_1(artistMenu, songMenu, artist_menu_win, showingArtists, menu_height, menu_width);
+              } else if (ch == keybinds["toggle_window_focus"]) {  // Tab to switch between menus
+                  updateSongMenu = false;
+                  showingartMen = true;
+                  showingArtists = !showingArtists;
+                  handleKeyEvent_tab(artistMenu, songMenu, artist_menu_win, song_menu_win, showingArtists, menu_height, menu_width);
+              } else if (ch == KEY_DOWN || ch == keybinds["key_down"]) {
                   move_menu_down(artistMenu, songMenu, showingArtists); // ncurses helpers
                   if (showingArtists) {
-                   updateSongMenu = true; 
-                  }
-                  break;
-                }
-                case KEY_UP:
-                case 'j':{
-                    move_menu_up(artistMenu, songMenu, showingArtists); // ncurses helpers
-                    if (showingArtists) {
                       updateSongMenu = true;
-                    }
-                    break;
-                }
-                case KEY_RIGHT:
-                  seekSong(music, 5, 1); // 1 is bool for true ->it will forward (sfml helpers)
-                  break;
-                case KEY_LEFT:
-                    seekSong(music, 5, 0); // sfml helpers
-                    break;
-                case '/': // string search 
-                {
+                  }
+              } else if (ch == KEY_UP || ch == keybinds["key_up"]) {
+                  move_menu_up(artistMenu, songMenu, showingArtists); // ncurses helpers
+                  if (showingArtists) {
+                      updateSongMenu = true;
+                  }
+              } else if (ch == KEY_RIGHT || ch == keybinds["key_right"]) {
+                  seekSong(music, 5, 1); // 1 is bool for true -> it will forward (sfml helpers)
+              } else if (ch == KEY_LEFT || ch == keybinds["key_left"]) {
+                  seekSong(music, 5, 0); // sfml helpers
+              } else if (ch == keybinds["string_search"]) { // string search 
                   handleKeyEvent_slash(artistMenu, songMenu, showingArtists);
                   if (showingArtists) {
-                    updateSongMenu = true; 
+                      updateSongMenu = true;
                   }
-                  break;
-                }
-                
-                case 10:  // Enter key
-                    if (!showingArtists) {
-                        // Play selected song from song menu
-                        ITEM* curItem = current_item(songMenu);
-                        int selectedIndex = item_index(curItem);
+              } else if (ch == keybinds["play_selected_song"]) {  // Enter key
+                  if (!showingArtists) {
+                      // Play selected song from song menu
+                      ITEM* curItem = current_item(songMenu);
+                      int selectedIndex = item_index(curItem);
 
-                        // Find the actual playable index (skip over non-selectable items)
-                        int playableIndex = -1;
-                        int actualIndex = 0;
+                      // Find the actual playable index (skip over non-selectable items)
+                      int playableIndex = -1;
+                      int actualIndex = 0;
 
-                        while (actualIndex <= selectedIndex) {
-                            if (item_opts(songItems[actualIndex]) & O_SELECTABLE) {
-                                if (playableIndex == selectedIndex) {
-                                    break; // Found the actual playable item
-                                }
-                                playableIndex++;
-                            }
-                            actualIndex++;
-                        }
-
-                        // Check if the selected index is within bounds and playable
-                        if (playableIndex < songPaths.size()) {
-                            currentSongIndex = playableIndex;
-                            updateStatusMetadata = true;
-                            playMusic(music, songPaths[currentSongIndex]); 
-                        }
-                        firstEnterPressed = true;
-                    }
-                    break;
-                     case 'p':  // Pause/play music
-                          if (music.getStatus() == sf::Music::Paused) {
-                              music.play();
-                          } else {
-                              music.pause();
+                      while (actualIndex <= selectedIndex) {
+                          if (item_opts(songItems[actualIndex]) & O_SELECTABLE) {
+                              if (playableIndex == selectedIndex) {
+                                  break; // Found the actual playable item
+                              }
+                              playableIndex++;
                           }
-                          break;
-                      case 'f':  // Fast-forward (skip 60 seconds)
-                          seekSong(music, 60, 1);
-                          break;
-                      case 'g':  // Rewind (go back 60 seconds)
-                          seekSong(music, 60 , 0);
-                          break;
-                      case 'r':  // Restart current song
-                          music.stop();
-                          music.play();
-                          break;
-                      case '9':  // Volume up
-                          adjustVolume(music, 10.f); // sfml helpers
-                          break;
-                      case '0':  // Volume down
-                          adjustVolume(music, -10.f); // sfml helpers
-                          break;
-                      case 'm':
-                          toggleMute(music, isMuted); // sfml helpers
-                          isMuted = !isMuted;
-                          break;
-                      case 'n':  // Next song
-                          if (firstEnterPressed) {
-                          nextSong(music, songPaths, currentSongIndex);
-                          updateStatusMetadata = true; 
-                        }
-                      break;
-                  case 'b':  // Previous song
-                      if (firstEnterPressed) {
-                        previousSong(music, songPaths, currentSongIndex);
-                        updateStatusMetadata = true; 
-                    }
-                    break;
-                case '2':  // Display help window
-                    if (showingArtists) {
+                          actualIndex++;
+                      }
+
+                      // Check if the selected index is within bounds and playable
+                      if (playableIndex < songPaths.size()) {
+                          currentSongIndex = playableIndex;
+                          updateStatusMetadata = true;
+                          playMusic(music, songPaths[currentSongIndex]);
+                      }
+                      firstEnterPressed = true;
+                  }
+              } else if (ch == keybinds["toggle_playback"]) {  // Pause/play music
+                  if (music.getStatus() == sf::Music::Paused) {
+                      music.play();
+                  } else {
+                      music.pause();
+                  }
+              } else if (ch == keybinds["forward_seek_song_60s"]) {  // Fast-forward (skip 60 seconds)
+                  seekSong(music, 60, 1);
+              } else if (ch == keybinds["backward_seek_song_60s"]) {  // Rewind (go back 60 seconds)
+                  seekSong(music, 60 , 0);
+              } else if (ch == keybinds["replay_current_song"]) {  // Restart current song
+                  music.stop();
+                  music.play();
+              } else if (ch == keybinds["increase_volume"]) {  // Volume up
+                  adjustVolume(music, 10.f); // sfml helpers
+              } else if (ch == keybinds["decrease_volume"]) {  // Volume down
+                  adjustVolume(music, -10.f); // sfml helpers
+              } else if (ch == keybinds["toggle_mute"]) {
+                  toggleMute(music, isMuted); // sfml helpers
+                  isMuted = !isMuted;
+              } else if (ch == keybinds["play_next_song"]) {  // Next song
+                  if (firstEnterPressed) {
+                      nextSong(music, songPaths, currentSongIndex);
+                      updateStatusMetadata = true; 
+                  }
+              } else if (ch == keybinds["play_prev_song"]) {  // Previous song
+                  if (firstEnterPressed) {
+                      previousSong(music, songPaths, currentSongIndex);
+                      updateStatusMetadata = true; 
+                  }
+              } else if (ch == keybinds["display_help_controls"]) {  // Display help window
+                  if (showingArtists) {
                       highlightFocusedWindow(artistMenu, false);
                       highlightFocusedWindow(songMenu, true);
                       showingArtists = !showingArtists;
-                    }
-                    showingartMen = false;
-                    displayWindow(artist_menu_win, "help");
-                    break;
-                case '3':
-                    if (currentLyrics != "") {
+                  }
+                  showingartMen = false;
+                  displayWindow(artist_menu_win, "help", keybinds);
+              } else if (ch == keybinds["display_lyrics_view"]) {
+                  if (currentLyrics != "") {
                       // Assuming you have all the necessary variables defined and initialized
                       displayLyricsWindow(artist_menu_win, currentLyrics, currentSong, currentArtist, menu_height, menu_width, music,
-                                          status_win, firstEnterPressed, showingLyrics, song_menu_win, songMenu, currentGenre, showingArtists);
-                    
-                    } else {
-                      displayWindow(artist_menu_win, "LyricErr");
+                                          status_win, firstEnterPressed, showingLyrics, song_menu_win, songMenu, currentGenre, showingArtists, keybinds);
+
+                  } else {
+                      displayWindow(artist_menu_win, "LyricErr", keybinds);
                       std::this_thread::sleep_for(std::chrono::seconds(1));
-                    }
-                    werase(artist_menu_win);
-                    ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width, "artist");
-                    set_menu_format(artistMenu, menu_height, 0);
-                    set_menu_fore(artistMenu, COLOR_PAIR(COLOR_YELLOW));
-                    post_menu(artistMenu);
-                    highlightFocusedWindow(artistMenu, showingArtists);
-                    showingLyrics = false;
-                    break;
-                case '4':
-                    if (showingArtists) {
+                  }
+                  werase(artist_menu_win);
+                  ncursesMenuSetup(artistMenu, artist_menu_win, menu_height, menu_width, "artist");
+                  set_menu_format(artistMenu, menu_height, 0);
+                  set_menu_fore(artistMenu, COLOR_PAIR(COLOR_YELLOW));
+                  post_menu(artistMenu);
+                  highlightFocusedWindow(artistMenu, showingArtists);
+                  showingLyrics = false;
+              } else if (ch == keybinds["display_session_details"]) {
+                  if (showingArtists) {
                       highlightFocusedWindow(artistMenu, false);
                       highlightFocusedWindow(songMenu, true);
                       showingArtists = !showingArtists;
-                    }
-                    showingartMen = false;
-                    printSessionDetails(artist_menu_win, songsDirectory, cacheLitemusDir, cacheDebugFile, artistsSize, songsSize);
-                    break;
-                case 'q':  // Quit
-                if (showExitConfirmation(song_menu_win)) {
-                    quitFunc(music, allArtists, songTitles, artistItems, songItems, artistMenu, songMenu);
-                    ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "delete");
-                    endwin();
-                    return 0;
-                }
-                break;
-                case 'x': // force exit
-                    quitFunc(music, allArtists, songTitles, artistItems, songItems, artistMenu, songMenu);
-                    ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "delete");
-                    endwin();
-                    return 0;
-                break; 
-            }
-        }
+                  }
+                  showingartMen = false;
+                  printSessionDetails(artist_menu_win, songsDirectory, cacheLitemusDir, cacheDebugFile, keybindsFilePath, artistsSize, songsSize);
+              } else if (ch == keybinds["quit"]) {  // Quit
+                  if (showExitConfirmation(song_menu_win)) {
+                      quitFunc(music, allArtists, songTitles, artistItems, songItems, artistMenu, songMenu);
+                      ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "delete");
+                      endwin();
+                      verboseQuit(NC, BLUE, BOLD);
+                      return 0;
+                  }
+              } else if (ch == keybinds["force_quit"]) { // force exit
+                  quitFunc(music, allArtists, songTitles, artistItems, songItems, artistMenu, songMenu);
+                  ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "delete");
+                  endwin();
+                  verboseQuit(NC, BLUE, BOLD);
+                  return 0;
+              }
+          }
 
                   
         if (updateSongMenu) {
@@ -432,7 +410,7 @@ int main(int argc, char* argv[]) {
     quitFunc(music, allArtists, songTitles, artistItems, songItems, artistMenu, songMenu);
     ncursesWinControl(artist_menu_win, song_menu_win, status_win, title_win, "delete");
     endwin();
-
+    verboseQuit(NC, BLUE, BOLD);
     return 0;
   }
   else {

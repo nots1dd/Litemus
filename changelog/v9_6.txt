@@ -1,0 +1,9 @@
+Change type: MAJOR
+
+Summary
+
+-> Custom keybinds is now implemented (with proper error handling and testing)
+
+-> More verbose output regarding keybinds parse errors
+
+-> Readme, build.sh update regarding `keybinds.json`
