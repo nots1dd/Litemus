@@ -26,7 +26,7 @@ SFML_LIBS = -lsfml-audio -lsfml-system
 NCURSES_LIBS = -lncurses -lmenu
 
 # nlohmann JSON (assuming it's installed globally)
-JSON_LIBS = -lnlohmann_json
+JSON_LIBS = -ljsoncpp
 
 # Includes
 INCLUDES = -I$(INC_DIR)

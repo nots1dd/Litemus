@@ -77,6 +77,8 @@ If for some reason you do not like or have cmake, there is a `Makefile` for this
 
 -> In the current directory run: `make` (`sudo make` should NOT be necessary)
 
+-> Copy `keybinds.json` over to `$HOME/.config/litemus/` directory
+
 This should compile all the files and link them to a `Litemus` executable. Simply run it!
 
 -> To clean up, run: `make clean`
